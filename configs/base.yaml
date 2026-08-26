@@ -4,9 +4,9 @@ project:
 
 data:
   variant: Base
-  raw_path: null
-  target_column: null
-  time_column: null
+  raw_path: data/raw/Base.csv
+  target_column: fraud_bool
+  time_column: month
 
 split:
   strategy: temporal

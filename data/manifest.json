@@ -1,0 +1,88 @@
+{
+  "dataset_name": "Bank Account Fraud Dataset Suite",
+  "dataset_variant": "Base",
+  "dataset_version": "1",
+  "file_name": "Base.csv",
+  "source_url": "https://www.kaggle.com/datasets/sgpjesus/bank-account-fraud-dataset-neurips-2022",
+  "official_repository": "https://github.com/feedzai/bank-account-fraud",
+  "file_size_bytes": 216591900,
+  "sha256": "ba7a015e4695399c89da8bf9ffac850be7c23b4666a6cf22af3b3424ecca0957",
+  "row_count": 1000000,
+  "column_count": 32,
+  "target_column": "fraud_bool",
+  "time_column": "month",
+  "time_values": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "target_distribution": {
+    "0": 988971,
+    "1": 11029
+  },
+  "full_duplicate_count": 0,
+  "feature_duplicate_count": 0,
+  "physical_null_count": 0,
+  "constant_columns": [
+    "device_fraud_count"
+  ],
+  "semantic_missing_rules": {
+    "prev_address_months_count": {
+      "rule": "value == -1",
+      "missing_count": 712920,
+      "missing_percentage": 71.292
+    },
+    "current_address_months_count": {
+      "rule": "value == -1",
+      "missing_count": 4254,
+      "missing_percentage": 0.4254
+    },
+    "bank_months_count": {
+      "rule": "value == -1",
+      "missing_count": 253635,
+      "missing_percentage": 25.3635
+    },
+    "session_length_in_minutes": {
+      "rule": "value == -1",
+      "missing_count": 2015,
+      "missing_percentage": 0.2015
+    },
+    "device_distinct_emails_8w": {
+      "rule": "value == -1",
+      "missing_count": 359,
+      "missing_percentage": 0.0359
+    },
+    "intended_balcon_amount": {
+      "rule": "value < 0",
+      "missing_count": 742523,
+      "missing_percentage": 74.2523
+    }
+  },
+  "documentation_mismatches": [
+    {
+      "column": "prev_address_months_count",
+      "documented_range": "[-1, 380]",
+      "observed_range": "[-1, 383]",
+      "decision": "Accept observed values without clipping."
+    },
+    {
+      "column": "proposed_credit_limit",
+      "documented_range": "[200, 2000]",
+      "observed_range": "[190, 2100]",
+      "outside_documented_range_count": 204,
+      "outside_documented_range_percentage": 0.0204,
+      "outside_values": {
+        "190.0": 163,
+        "2100.0": 41
+      },
+      "decision": "Accept observed values without dropping or clipping."
+    }
+  ],
+  "license": "Creative Commons CC BY-NC-ND 4.0",
+  "raw_data_committed_to_git": false
+}
