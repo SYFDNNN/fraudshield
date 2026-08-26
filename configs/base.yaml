@@ -1,0 +1,27 @@
+project:
+  name: fraudshield
+  random_seed: 42
+
+data:
+  variant: Base
+  raw_path: null
+  target_column: null
+  time_column: null
+
+split:
+  strategy: temporal
+  train_periods: []
+  calibration_periods: []
+  validation_periods: []
+  test_periods: []
+
+review_policy:
+  capacity_rate: null
+  decision_threshold: null
+  risk_categories: {}
+
+artifacts:
+  directory: artifacts
+
+reports:
+  figures_directory: reports/figures

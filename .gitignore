@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Pengujian dan linting
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Credential dan environment variable
+.env
+.env.*
+!.env.example
+kaggle.json
+*.pem
+*.key
+
+# Dataset lokal
+data/*
+!data/README.md
+*.csv
+*.parquet
+*.feather
+*.zip
+
+# Fixture pengujian yang memang diizinkan
+!tests/fixtures/
+!tests/fixtures/**
+
+# Artifact model
+artifacts/*
+!artifacts/.gitkeep
+*.joblib
+*.pkl
+*.onnx
+
+# Log dan eksperimen lokal
+logs/
+*.log
+mlruns/
+
+# Editor dan sistem operasi
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,6 @@
+services:
+  fraudshield:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: fraudshield:phase0

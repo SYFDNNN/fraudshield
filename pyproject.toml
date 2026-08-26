@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fraudshield"
+version = "0.1.0"
+description = "Sistem penilaian risiko aplikasi rekening bank berbasis temporal dan biaya."
+readme = "README.md"
+requires-python = ">=3.12,<3.14"
+license = "MIT"
+authors = [
+    { name = "Akhmad Syaifudin" }
+]
+dependencies = [
+    "numpy>=2.0,<3.0",
+    "pandas>=2.2,<4.0",
+    "pyarrow>=17,<24",
+    "scikit-learn>=1.7,<2.0",
+    "pandera[pandas]>=0.25,<1.0",
+    "matplotlib>=3.9,<4.0",
+    "seaborn>=0.13,<1.0",
+    "PyYAML>=6,<7"
+]
+
+[project.optional-dependencies]
+dev = [
+    "jupyterlab>=4,<5",
+    "ipykernel>=6,<8",
+    "pytest>=8,<10",
+    "ruff>=0.12,<1"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
