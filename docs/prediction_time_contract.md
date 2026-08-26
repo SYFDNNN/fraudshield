@@ -1,54 +1,133 @@
 # Kontrak Waktu Prediksi
 
-## Waktu prediksi
+## Waktu Prediksi
 
-Prediksi dilakukan setelah informasi wajib aplikasi diterima, tetapi sebelum
-investigasi manual dan keputusan akhir pembukaan rekening.
+Prediksi dilakukan setelah applicant menyelesaikan dan mengirimkan aplikasi,
+tetapi sebelum investigasi manual dan keputusan akhir pembukaan rekening.
 
-## Unit prediksi
+Pemilihan waktu ini membuat informasi sesi yang telah selesai, seperti
+`session_length_in_minutes` dan `keep_alive_session`, tersedia saat scoring.
 
-Satu baris mewakili satu aplikasi pembukaan rekening. Definisi ini akan
-dikonfirmasi kembali menggunakan dokumentasi dan data aktual pada Fase 1.
+## Unit Prediksi
 
-## Informasi yang boleh digunakan
+Satu baris merepresentasikan satu aplikasi pembukaan rekening bank.
 
-Hanya informasi yang:
+Model menghasilkan skor risiko untuk satu aplikasi dan tidak menghasilkan
+keputusan penolakan secara otomatis.
 
-1. tersedia ketika aplikasi diajukan;
-2. terdapat dalam dataset aktual;
-3. lolos audit leakage;
-4. dapat diproses dengan aturan yang hanya dipelajari dari data training.
+## Target
 
-Daftar fitur final belum ditentukan.
+Target adalah `fraud_bool`:
 
-## Informasi yang dilarang
+- `0`: aplikasi non-fraud.
+- `1`: aplikasi fraud.
 
-- Label fraud.
-- Hasil investigasi analyst.
-- Keputusan akhir aplikasi.
-- Informasi yang muncul setelah waktu prediksi.
-- Target proxy atau fitur turunan yang membocorkan hasil.
+Target hanya tersedia setelah proses verifikasi atau investigasi selesai dan
+tidak boleh digunakan sebagai predictor.
 
-## Keluaran
+## Temporal Contract
 
-- fraud_probability: probabilitas fraud yang telah dikalibrasi.
-- risk_category: kategori risiko dengan batas yang dapat dikonfigurasi.
-- reason_codes: faktor model yang paling memengaruhi prediksi.
-- model_version: versi model yang digunakan.
-- threshold_policy_version: versi kebijakan threshold.
-- review_rank: posisi prioritas untuk prediksi batch.
+Dataset memiliki periode `month` dari 0 sampai 7.
 
-## Tindakan pengguna
+Pembagian data ditetapkan sebagai berikut:
 
-Analyst menggunakan skor untuk menentukan urutan pemeriksaan. Skor bukan bukti
-fraud dan bukan perintah untuk menolak aplikasi.
+| Split | Period | Purpose |
+|---|---|---|
+| Train | Month 0–4 | EDA, preprocessing, feature engineering, dan training |
+| Calibration | Month 5 | Probability calibration |
+| Validation | Month 6 | Model selection dan threshold selection |
+| Test | Month 7 | Final evaluation satu kali |
 
-## Penanganan input tidak valid
+Seluruh preprocessing dan feature transformation harus di-fit hanya menggunakan
+training set.
 
-Input yang tidak memenuhi schema harus menghasilkan validation error. Sistem
-tidak boleh mengarang nilai untuk field wajib yang tidak tersedia.
+Test set tidak boleh digunakan untuk:
 
-## Label tertunda
+- Memilih fitur.
+- Menentukan aturan missing value.
+- Menentukan encoding.
+- Memilih model atau hyperparameter.
+- Memilih calibration method.
+- Menentukan decision threshold.
 
-Label fraud aktual diasumsikan tersedia setelah jeda waktu dan digunakan untuk
-evaluasi serta monitoring berikutnya.
+## Primary Feature Exclusions
+
+Fitur berikut tidak digunakan oleh primary model:
+
+### `fraud_bool`
+
+Merupakan target dan tidak boleh masuk ke predictor.
+
+### `month`
+
+Digunakan untuk temporal split dan monitoring, bukan sebagai predictor.
+
+### `device_fraud_count`
+
+Seluruh nilainya konstan `0` pada Base dataset. Nama fitur juga menunjukkan
+potensi ketergantungan terhadap informasi fraud.
+
+### `days_since_request`
+
+Definisi waktunya ambigu dan belum dapat dibuktikan tersedia pada saat
+prediction-time. Fitur dikeluarkan untuk mencegah post-event leakage.
+
+### `credit_risk_score`
+
+Merupakan skor risiko internal dari sistem sebelumnya. Primary model
+diharapkan menghasilkan sinyal risiko yang independen dan dapat dijelaskan.
+
+Fitur ini hanya boleh digunakan pada eksperimen benchmark terpisah jika
+eksperimen tersebut diberi label secara eksplisit.
+
+## Historical Aggregate Features
+
+Fitur berikut dapat digunakan dengan syarat hanya berisi kejadian sebelum
+aplikasi saat ini:
+
+- `zip_count_4w`
+- `velocity_6h`
+- `velocity_24h`
+- `velocity_4w`
+- `bank_branch_count_8w`
+- `date_of_birth_distinct_emails_4w`
+- `device_distinct_emails_8w`
+
+Dataset tidak menyediakan event-level timestamps untuk menghitung ulang fitur
+tersebut. Karena itu, project mendokumentasikan asumsi bahwa aggregate features
+telah dihitung secara point-in-time correct oleh pembuat dataset.
+
+## Semantic Missing Values
+
+Sentinel values tetap disimpan dalam raw dataset.
+
+Aturan transformasi sentinel akan dipelajari dan diterapkan melalui
+preprocessing pipeline yang di-fit hanya pada training set.
+
+## Model Output
+
+Model akan menghasilkan:
+
+- `fraud_probability`
+- `risk_category`
+- `reason_codes`
+- `model_version`
+- `threshold_policy_version`
+- `review_rank`
+
+## Decision Workflow
+
+Fraud analyst menggunakan probabilitas untuk memprioritaskan aplikasi yang
+perlu diperiksa.
+
+Prediksi bukan bukti fraud dan bukan perintah otomatis untuk menolak applicant.
+
+## Invalid Input
+
+Input yang tidak sesuai schema harus menghasilkan validation error. Sistem tidak
+boleh mengarang nilai untuk field wajib yang tidak tersedia.
+
+## Delayed Labels
+
+Label fraud diasumsikan tersedia setelah proses verifikasi. Label tersebut
+digunakan untuk evaluasi dan monitoring setelah prediction window selesai.

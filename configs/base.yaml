@@ -10,10 +10,39 @@ data:
 
 split:
   strategy: temporal
-  train_periods: []
-  calibration_periods: []
-  validation_periods: []
-  test_periods: []
+  train_periods:
+    - 0
+    - 1
+    - 2
+    - 3
+    - 4
+  calibration_periods:
+    - 5
+  validation_periods:
+    - 6
+  test_periods:
+    - 7
+
+feature_policy:
+  excluded_from_model:
+    - fraud_bool
+    - month
+    - device_fraud_count
+    - days_since_request
+    - credit_risk_score
+
+  historical_aggregate_features:
+    - zip_count_4w
+    - velocity_6h
+    - velocity_24h
+    - velocity_4w
+    - bank_branch_count_8w
+    - date_of_birth_distinct_emails_4w
+    - device_distinct_emails_8w
+
+  historical_aggregate_assumption: >
+    Every aggregate feature must contain only information available before
+    the current application prediction time.
 
 review_policy:
   capacity_rate: null
