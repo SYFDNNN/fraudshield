@@ -159,6 +159,51 @@ model_selection:
     - training_seconds
     - model_name
 
+calibration:
+  base_model_name: xgboost_strong_regularization
+  fit_periods:
+    - 5
+  selection_periods:
+    - 6
+
+  candidates:
+    - name: sigmoid
+      method: sigmoid
+      C: 1000000.0
+      max_iter: 1000
+      clip_epsilon: 0.000001
+
+    - name: isotonic
+      method: isotonic
+      out_of_bounds: clip
+
+  selection:
+    baseline_name: uncalibrated
+    primary_metric: brier_score
+    minimum_absolute_brier_improvement: 0.001
+    maximum_average_precision_drop: 0.005
+    tie_breakers:
+      - expected_calibration_error
+      - log_loss
+      - average_precision
+      - method_name
+
+threshold_selection:
+  selection_periods:
+    - 6
+  capacity_rate: 0.05
+  tie_break_policy: >
+    calibrated_score_desc_then_raw_score_desc_then_stable_application_key
+  risk_bands:
+    - label: sangat_tinggi
+      cumulative_review_rate: 0.01
+    - label: tinggi
+      cumulative_review_rate: 0.05
+    - label: menengah
+      cumulative_review_rate: 0.10
+    - label: rendah
+      cumulative_review_rate: 1.00
+
 evaluation:
   review_rates:
     - 0.01
@@ -169,14 +214,21 @@ evaluation:
   calibration_bins: 10
 
 review_policy:
-  capacity_rate: null
-  decision_threshold: null
-  risk_categories: {}
+  capacity_rate: 0.05
+  decision_threshold: derived_from_validation
+  threshold_purpose: manual_review_prioritization_only
+  automated_rejection_allowed: false
+  risk_categories:
+    sangat_tinggi: top_1_percent
+    tinggi: percentile_1_to_5
+    menengah: percentile_5_to_10
+    rendah: below_top_10_percent
 
 artifacts:
   directory: artifacts
   phase3_directory: artifacts/phase3
   phase4_directory: artifacts/phase4
+  phase5_directory: artifacts/phase5
 
 reports:
   figures_directory: reports/figures

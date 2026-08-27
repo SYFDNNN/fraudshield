@@ -10,9 +10,10 @@ pemeriksaan manual.
 
 ## Status proyek
 
-Source code saat ini mencakup Fase 4: XGBoost dan model selection. Hasil
-numerik hanya sah setelah notebook dijalankan ulang pada data lokal; untouched
-test set month 7 belum dievaluasi.
+Source code saat ini mencakup Fase 5: kalibrasi probabilitas, pemilihan
+threshold berbasis kapasitas review, dan risk band. Hasil numerik hanya sah
+setelah notebook dijalankan ulang pada data lokal; untouched test set month 7
+belum dievaluasi.
 
 ## Tujuan utama
 
@@ -98,8 +99,43 @@ dikunci sebelum eksperimen dijalankan.
 Output lokal disimpan pada `artifacts/phase4/` dan diabaikan oleh Git. Month 5
 hanya ditampilkan sebagai diagnostic stability context; month 7 tidak tersedia
 pada objek eksperimen dan tidak ikut training, tuning, selection, atau reporting.
-Probability calibration dan business-threshold selection tetap ditunda ke
-Fase 5.
+Pada akhir Fase 4, probability calibration dan business-threshold selection
+memang belum dilakukan; keduanya ditangani oleh workflow Fase 5 berikut.
+
+## Menjalankan kalibrasi dan threshold Fase 5
+
+Jalankan dari root repository:
+
+```text
+python -m fraudshield.calibrate --config configs/base.yaml
+```
+
+atau buka `notebooks/05_calibration_threshold.ipynb`, restart kernel, lalu
+Run All.
+
+Fase 5 mengunci `xgboost_strong_regularization` sebagai model dasar hasil
+Fase 4. Preprocessing dan model tersebut dilatih ulang hanya pada month 0–4.
+Probabilitas mentah pada month 5 digunakan untuk mem-fit kandidat kalibrasi
+sigmoid dan isotonic. Month 6 digunakan untuk memilih antara probabilitas
+mentah, sigmoid, dan isotonic berdasarkan Brier score dengan guardrail average
+precision. Month 7 tetap tidak tersedia pada objek eksperimen.
+
+Setelah metode kalibrasi dipilih, month 6 juga digunakan untuk membentuk:
+
+- Kebijakan review berkapasitas 5%.
+- Risk band `sangat_tinggi` (top 1%), `tinggi` (1–5%), `menengah` (5–10%),
+  dan `rendah` (di bawah top 10%).
+- Audit tie pada score cutoff dan aturan tie-break deterministik.
+
+Rekomendasi review menghasilkan jumlah baris tepat sesuai kapasitas batch.
+Probabilitas terkalibrasi menjadi ranking utama, probabilitas mentah menjadi
+tie-break kedua, dan application key yang stabil menjadi tie-break terakhir.
+Threshold yang tersimpan juga tersedia untuk diagnostic, tetapi score maupun
+risk band tidak boleh digunakan sebagai penolakan otomatis.
+
+Output lokal disimpan pada `artifacts/phase5/` dan diabaikan oleh Git. Paket
+model gabungan berisi preprocessing, model XGBoost, calibrator terpilih,
+kebijakan kapasitas, dan risk-band policy.
 
 ## Dokumentasi
 
@@ -107,6 +143,7 @@ Fase 5.
 - docs/prediction_time_contract.md
 - docs/architecture.md
 - reports/phase4_model_selection.md
+- reports/phase5_calibration_threshold.md
 
 ## Lisensi
 

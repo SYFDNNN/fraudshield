@@ -35,7 +35,10 @@ def load_config(path: str | Path = DEFAULT_CONFIG_PATH) -> dict[str, Any]:
         "baseline",
         "xgboost",
         "model_selection",
+        "calibration",
+        "threshold_selection",
         "evaluation",
+        "review_policy",
         "artifacts",
     }
     missing_sections = sorted(required_sections - set(config))
