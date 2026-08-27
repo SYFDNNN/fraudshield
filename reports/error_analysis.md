@@ -49,12 +49,37 @@ eksekusi disimpan lokal pada
 
 Month 7 tidak digunakan untuk membuat diagnostic ini.
 
+## Fase 6 — Final untouched-test error analysis
+
+Notebook `06_final_evaluation.ipynb` melakukan analisis kesalahan satu kali pada
+month 7 menggunakan exact-capacity review flags dari kebijakan yang telah
+dikunci. Output lokal disimpan pada
+`artifacts/phase6/test_error_analysis.csv`.
+
+Tiga kelompok contoh dilaporkan:
+
+- `reviewed_non_fraud`: aplikasi non-fraud yang memakai kapasitas review.
+- `missed_fraud_near_boundary`: fraud dengan score tertinggi di luar antrean
+  review, untuk mengaudit kasus dekat batas kapasitas.
+- `missed_fraud_low_score`: fraud dengan score terendah, untuk mengaudit failure
+  mode model yang paling sulit.
+
+Metrik slice yang telah ditetapkan sebelum test mencakup payment type,
+employment status, housing status, source, device OS, kelompok customer age,
+dan kelompok income. Slice dengan dukungan data yang tidak cukup tetap
+ditampilkan, tetapi average precision dan ROC-AUC tidak dilaporkan sebagai
+angka stabil.
+
+Hasil test hanya digunakan untuk pelaporan dan investigasi. Analisis kesalahan
+tidak boleh digunakan untuk menyesuaikan model yang sama lalu mengevaluasi
+ulang month 7 sebagai untouched test.
+
 ## Analisis lanjutan
 
 Dokumen ini akan dilengkapi setelah evaluasi final dan mencakup:
 
 - Analisis false positive.
 - Analisis false negative.
-- Performa berdasarkan data slice.
-- Perubahan performa temporal.
+- Explainability berbasis SHAP.
+- Pemeriksaan interaksi fitur dan stability explanation.
 - Keterbatasan serta pertimbangan etis.

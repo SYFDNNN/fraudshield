@@ -10,10 +10,10 @@ pemeriksaan manual.
 
 ## Status proyek
 
-Source code saat ini mencakup Fase 5: kalibrasi probabilitas, pemilihan
-threshold berbasis kapasitas review, dan risk band. Hasil numerik hanya sah
-setelah notebook dijalankan ulang pada data lokal; untouched test set month 7
-belum dievaluasi.
+Source code saat ini mencakup Fase 6: evaluasi final satu kali pada untouched
+test month 7. Workflow menulis freeze manifest sebelum test dibuka dan memakai
+kembali hasil tersimpan pada eksekusi berikutnya agar test tidak dievaluasi
+berulang kali.
 
 ## Tujuan utama
 
@@ -137,6 +137,47 @@ Output lokal disimpan pada `artifacts/phase5/` dan diabaikan oleh Git. Paket
 model gabungan berisi preprocessing, model XGBoost, calibrator terpilih,
 kebijakan kapasitas, dan risk-band policy.
 
+## Menjalankan evaluasi final Fase 6
+
+Fase 6 membutuhkan artifact Fase 5 yang sudah dibuat oleh notebook sebelumnya,
+khususnya `artifacts/phase5/calibrated_review_model.joblib` dan metadata
+pendukungnya.
+
+Jalankan dari root repository:
+
+```text
+python -m fraudshield.final_evaluate --config configs/base.yaml
+```
+
+atau buka `notebooks/06_final_evaluation.ipynb`, restart kernel, lalu Run All.
+
+Pada eksekusi pertama, workflow:
+
+- Memverifikasi hash model, calibrator, threshold, risk band, dan metadata
+  Fase 5.
+- Menulis freeze manifest sebelum test diakses.
+- Membuka month 7 hanya untuk satu paket pelaporan final yang telah dikunci.
+- Menghitung metrik ranking, calibration, fixed-threshold transfer, dan exact
+  capacity 5%.
+- Membuat stratified bootstrap confidence interval, temporal comparison,
+  risk-band summary, pre-registered slice metrics, dan error analysis.
+- Menghasilkan model card faktual dari hasil tersimpan.
+
+Jika completion artifact sudah ada dan semua hash masih cocok, eksekusi
+berikutnya tidak membaca dataset atau mengevaluasi test ulang. Workflow hanya
+memuat artifact hasil pertama. Tidak tersedia opsi `force` untuk menghapus atau
+menimpa hasil final.
+
+Jika proses terputus setelah test mulai diakses tetapi sebelum seluruh hasil
+tersimpan, workflow gagal tertutup dan melarang evaluasi otomatis kedua. Jika
+seluruh hasil beserta hash sudah tersimpan tetapi penulisan completion marker
+saja yang terputus, marker dapat dipulihkan tanpa membuka test kembali.
+
+Output lokal disimpan pada `artifacts/phase6/` dan diabaikan oleh Git. Hasil
+test tidak boleh dipakai untuk mengubah model yang sama lalu diklaim sebagai
+evaluasi untouched test baru. Reporting alert hanya memicu investigasi dan
+dokumentasi.
+
 ## Dokumentasi
 
 - docs/project_charter.md
@@ -144,6 +185,7 @@ kebijakan kapasitas, dan risk-band policy.
 - docs/architecture.md
 - reports/phase4_model_selection.md
 - reports/phase5_calibration_threshold.md
+- reports/phase6_final_evaluation.md
 
 ## Lisensi
 

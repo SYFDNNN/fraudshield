@@ -224,11 +224,61 @@ review_policy:
     menengah: percentile_5_to_10
     rendah: below_top_10_percent
 
+final_evaluation:
+  evaluation_periods:
+    - 7
+  phase5_model_artifact: artifacts/phase5/calibrated_review_model.joblib
+  phase5_metadata_artifact: artifacts/phase5/phase5_metadata.json
+  phase5_metrics_artifact: artifacts/phase5/calibration_metrics.json
+  phase5_decision_artifact: artifacts/phase5/calibration_decision.json
+  phase5_capacity_artifact: artifacts/phase5/capacity_threshold_policy.json
+  phase5_risk_band_artifact: artifacts/phase5/risk_band_policy.json
+  completed_result_policy: reuse_without_test_re_evaluation
+  error_examples_per_type: 25
+
+  bootstrap:
+    method: stratified_percentile
+    confidence_level: 0.95
+    number_of_resamples: 200
+    random_seed: 42
+
+  stability_alerts:
+    maximum_average_precision_drop: 0.03
+    maximum_recall_at_capacity_drop: 0.05
+    maximum_brier_score_increase: 0.005
+    maximum_expected_calibration_error_increase: 0.02
+
+  slices:
+    minimum_rows: 500
+    minimum_positive_rows: 10
+    categorical_features:
+      - payment_type
+      - employment_status
+      - housing_status
+      - source
+      - device_os
+    numeric_bins:
+      customer_age:
+        - 0
+        - 25
+        - 35
+        - 45
+        - 55
+        - 65
+        - 200
+      income:
+        - 0.0
+        - 0.3
+        - 0.6
+        - 1.1
+
 artifacts:
   directory: artifacts
   phase3_directory: artifacts/phase3
   phase4_directory: artifacts/phase4
   phase5_directory: artifacts/phase5
+  phase6_directory: artifacts/phase6
 
 reports:
   figures_directory: reports/figures
+  model_card_path: reports/model_card.md
