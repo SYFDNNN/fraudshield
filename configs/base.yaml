@@ -44,6 +44,72 @@ feature_policy:
     Every aggregate feature must contain only information available before
     the current application prediction time.
 
+  high_drift_features:
+    - velocity_4w
+    - velocity_24h
+    - velocity_6h
+    - zip_count_4w
+    - date_of_birth_distinct_emails_4w
+
+preprocessing:
+  categorical_features:
+    - payment_type
+    - employment_status
+    - housing_status
+    - source
+    - device_os
+
+  semantic_missing_rules:
+    prev_address_months_count:
+      operator: equals
+      value: -1
+    current_address_months_count:
+      operator: equals
+      value: -1
+    bank_months_count:
+      operator: equals
+      value: -1
+    session_length_in_minutes:
+      operator: equals
+      value: -1
+    device_distinct_emails_8w:
+      operator: equals
+      value: -1
+    intended_balcon_amount:
+      operator: less_than
+      value: 0
+
+  add_missing_indicators: true
+  numeric_imputer_strategy: median
+  categorical_imputer_strategy: most_frequent
+  scale_numeric: true
+
+baseline:
+  primary_model_name: logistic_regression_balanced
+
+  dummy:
+    strategy: prior
+
+  logistic_regression:
+    C: 1.0
+    class_weight: balanced
+    solver: lbfgs
+    max_iter: 500
+    tolerance: 0.0001
+
+  high_drift_ablation:
+    enabled: true
+    model_name: logistic_regression_without_high_drift
+
+evaluation:
+  review_rates:
+    - 0.01
+    - 0.03
+    - 0.05
+    - 0.10
+  diagnostic_threshold: 0.50
+  calibration_bins: 10
+
 review_policy:
   capacity_rate: null
   decision_threshold: null
@@ -51,6 +117,7 @@ review_policy:
 
 artifacts:
   directory: artifacts
+  phase3_directory: artifacts/phase3
 
 reports:
   figures_directory: reports/figures

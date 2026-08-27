@@ -10,8 +10,9 @@ pemeriksaan manual.
 
 ## Status proyek
 
-Proyek saat ini berada pada Fase 0: piagam proyek dan persiapan lingkungan.
-Belum ada hasil EDA, pemodelan, atau klaim performa.
+Source code saat ini mencakup Fase 3: preprocessing pipeline dan baseline
+modeling. Hasil numerik hanya sah setelah notebook dijalankan ulang pada data
+lokal; untouched test set month 7 belum dievaluasi.
 
 ## Tujuan utama
 
@@ -28,15 +29,47 @@ Proyek menggunakan Base dataset dari Bank Account Fraud Dataset Suite:
 
 https://github.com/feedzai/bank-account-fraud
 
-Data mentah tidak disimpan dalam repository. Petunjuk pengunduhan dan data
-manifest akan dibuat pada Fase 1.
+Data mentah tidak disimpan dalam repository. Tempatkan Base dataset pada:
+
+```text
+data/raw/Base.csv
+```
+
+Identitas file dan checksum tersedia pada `data/manifest.json`.
 
 ## Persiapan lokal
 
 1. Gunakan Python 3.12.
-2. Buat virtual environment bernama .venv.
-3. Jalankan python -m pip install -r requirements.txt.
-4. Jalankan pytest untuk pemeriksaan awal.
+2. Buat virtual environment bernama `.venv`.
+3. Jalankan `python -m pip install -r requirements.txt`.
+4. Jalankan `python -m pytest -q`.
+5. Jalankan `python -m ruff check src app tests`.
+
+## Menjalankan baseline Fase 3
+
+Gunakan salah satu jalur berikut dari root repository:
+
+```text
+python -m fraudshield.train --config configs/base.yaml
+```
+
+atau buka `notebooks/03_model_experiments.ipynb`, restart kernel, lalu Run All.
+
+Eksperimen Fase 3 membandingkan:
+
+- Dummy classifier dengan prior training.
+- Class-weighted logistic regression.
+- Logistic-regression ablation tanpa fitur high-drift dari Fase 2.
+
+Pipeline mengubah sentinel semantic menjadi missing value, membuat missing
+indicator, melakukan median imputation, standard scaling, dan one-hot encoding
+dengan `handle_unknown="ignore"`. Seluruh transformer berada di dalam model
+pipeline dan hanya di-fit menggunakan month 0–4.
+
+Output lokal disimpan pada `artifacts/phase3/` dan diabaikan oleh Git. Month 5
+digunakan untuk diagnostic calibration awal, month 6 untuk baseline comparison,
+sedangkan month 7 tetap untouched. Threshold `0.50` pada Fase 3 hanya diagnostic
+dan bukan business threshold final.
 
 ## Dokumentasi
 
