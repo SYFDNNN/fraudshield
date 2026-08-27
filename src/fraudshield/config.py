@@ -33,6 +33,8 @@ def load_config(path: str | Path = DEFAULT_CONFIG_PATH) -> dict[str, Any]:
         "feature_policy",
         "preprocessing",
         "baseline",
+        "xgboost",
+        "model_selection",
         "evaluation",
         "artifacts",
     }

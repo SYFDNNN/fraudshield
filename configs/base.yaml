@@ -101,6 +101,64 @@ baseline:
     enabled: true
     model_name: logistic_regression_without_high_drift
 
+xgboost:
+  objective: binary:logistic
+  eval_metric: aucpr
+  tree_method: hist
+  importance_type: gain
+  n_jobs: -1
+  verbosity: 1
+  scale_numeric: false
+  maximum_candidates: 5
+
+  candidates:
+    - name: xgboost_shallow_regularized
+      n_estimators: 450
+      learning_rate: 0.05
+      max_depth: 3
+      min_child_weight: 10.0
+      subsample: 0.80
+      colsample_bytree: 0.80
+      gamma: 0.0
+      reg_alpha: 0.10
+      reg_lambda: 5.0
+
+    - name: xgboost_moderate_depth
+      n_estimators: 400
+      learning_rate: 0.05
+      max_depth: 4
+      min_child_weight: 15.0
+      subsample: 0.80
+      colsample_bytree: 0.80
+      gamma: 0.05
+      reg_alpha: 0.10
+      reg_lambda: 7.0
+
+    - name: xgboost_strong_regularization
+      n_estimators: 325
+      learning_rate: 0.08
+      max_depth: 3
+      min_child_weight: 25.0
+      subsample: 0.90
+      colsample_bytree: 0.90
+      gamma: 0.10
+      reg_alpha: 0.25
+      reg_lambda: 10.0
+
+model_selection:
+  baseline_model_name: logistic_regression_balanced
+  primary_metric: pr_auc_average_precision
+  operational_review_rate: 0.05
+  minimum_absolute_ap_improvement: 0.002
+  maximum_recall_at_capacity_drop: 0.01
+  selection_periods:
+    - 6
+  tie_breakers:
+    - recall_at_capacity
+    - brier_score
+    - training_seconds
+    - model_name
+
 evaluation:
   review_rates:
     - 0.01
@@ -118,6 +176,7 @@ review_policy:
 artifacts:
   directory: artifacts
   phase3_directory: artifacts/phase3
+  phase4_directory: artifacts/phase4
 
 reports:
   figures_directory: reports/figures

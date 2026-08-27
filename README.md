@@ -10,9 +10,9 @@ pemeriksaan manual.
 
 ## Status proyek
 
-Source code saat ini mencakup Fase 3: preprocessing pipeline dan baseline
-modeling. Hasil numerik hanya sah setelah notebook dijalankan ulang pada data
-lokal; untouched test set month 7 belum dievaluasi.
+Source code saat ini mencakup Fase 4: XGBoost dan model selection. Hasil
+numerik hanya sah setelah notebook dijalankan ulang pada data lokal; untouched
+test set month 7 belum dievaluasi.
 
 ## Tujuan utama
 
@@ -71,11 +71,42 @@ digunakan untuk diagnostic calibration awal, month 6 untuk baseline comparison,
 sedangkan month 7 tetap untouched. Threshold `0.50` pada Fase 3 hanya diagnostic
 dan bukan business threshold final.
 
+## Menjalankan XGBoost dan model selection Fase 4
+
+Jalankan dari root repository:
+
+```text
+python -m fraudshield.model_selection --config configs/base.yaml
+```
+
+atau buka `notebooks/04_xgboost_model_selection.ipynb`, restart kernel, lalu
+Run All.
+
+Fase 4 membandingkan ulang primary logistic baseline dengan tiga kandidat
+XGBoost yang sudah ditentukan di `configs/base.yaml`. Pencarian kandidat sengaja
+kecil dan transparan. Setiap model memakai preprocessing pipeline yang di-fit
+hanya pada train month 0–4. Ketidakseimbangan kelas ditangani dengan
+`scale_pos_weight` yang dihitung hanya dari label train.
+
+Kandidat XGBoost diranking pada validation month 6 menggunakan average
+precision, lalu recall pada kapasitas review 5%, Brier score, waktu training,
+dan nama model sebagai deterministic tie-breakers. XGBoost hanya menggantikan
+logistic baseline jika peningkatan absolute average precision minimal `0.002`
+dan penurunan recall pada kapasitas 5% tidak melebihi `0.01`. Semua batas ini
+dikunci sebelum eksperimen dijalankan.
+
+Output lokal disimpan pada `artifacts/phase4/` dan diabaikan oleh Git. Month 5
+hanya ditampilkan sebagai diagnostic stability context; month 7 tidak tersedia
+pada objek eksperimen dan tidak ikut training, tuning, selection, atau reporting.
+Probability calibration dan business-threshold selection tetap ditunda ke
+Fase 5.
+
 ## Dokumentasi
 
 - docs/project_charter.md
 - docs/prediction_time_contract.md
 - docs/architecture.md
+- reports/phase4_model_selection.md
 
 ## Lisensi
 
