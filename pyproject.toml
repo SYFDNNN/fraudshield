@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "fraudshield"
-version = "0.1.0"
+version = "0.2.0"
 description = "Sistem penilaian risiko aplikasi rekening bank berbasis temporal dan biaya."
 readme = "README.md"
 requires-python = ">=3.12,<3.14"
@@ -31,6 +31,13 @@ dev = [
     "ipykernel>=6,<8",
     "pytest>=8,<10",
     "ruff>=0.12,<1"
+]
+serve = [
+    "fastapi>=0.116,<1",
+    "httpx>=0.28,<1",
+    "pydantic>=2.11,<3",
+    "streamlit>=1.46,<2",
+    "uvicorn[standard]>=0.35,<1"
 ]
 
 [tool.setuptools.packages.find]

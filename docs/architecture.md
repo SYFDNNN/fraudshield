@@ -1,7 +1,7 @@
 # Arsitektur FraudShield
 
-Arsitektur sampai Fase 6 memisahkan development, calibration, selection, dan
-final evaluation berdasarkan waktu.
+Arsitektur sampai Fase 7 memisahkan development, calibration, selection, final
+evaluation, dan serving berdasarkan waktu serta trust boundary.
 
 ```mermaid
 flowchart TD
@@ -10,7 +10,8 @@ flowchart TD
     C --> D["Fit calibrator: month 5"]
     D --> E["Selection: month 6"]
     E --> F["Final test: month 7"]
-    F --> G["Inference dan monitoring"]
+    F --> G["Artifact gate"]
+    G --> H["Inference API"]
 ```
 
 Aturan utama arsitektur adalah satu pipeline preprocessing yang sama untuk
@@ -51,3 +52,28 @@ tidak membaca dataset.
 - Risk band bukan bukti fraud.
 - Tidak ada automated rejection.
 - Reporting alert tidak menjalankan tuning otomatis.
+
+## Serving Fase 7
+
+```mermaid
+flowchart TD
+    A["Client atau Streamlit"] --> B["Strict FastAPI schema"]
+    B --> C["Artifact-locked runtime"]
+    C --> D["Calibrated model pipeline"]
+    C --> E["Aggregate telemetry"]
+```
+
+FastAPI adalah satu-satunya komponen yang memuat artifact model. Streamlit
+hanya menjadi HTTP client dan tidak memiliki akses ke raw dataset, label, atau
+model. Runtime memverifikasi hash model dan bukti evaluasi final sebelum
+readiness berhasil.
+
+Single request menghasilkan probability dan fixed-threshold signal tanpa
+exact-capacity claim. Batch request harus merepresentasikan seluruh decision
+window; runtime kemudian memberi ranking deterministik dan tepat
+`ceil(rows × 5%)` review flags.
+
+Artifact model di-mount read-only pada container. Image berjalan sebagai user
+non-root. TLS, authentication, rate limiting, durable audit storage, dan
+central monitoring berada pada API gateway/platform boundary dan belum
+diimplementasikan oleh demo lokal.

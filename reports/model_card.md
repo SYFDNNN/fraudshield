@@ -99,3 +99,19 @@ membuktikan fairness atau absence of bias.
 - Refit setelah test: `False`.
 - Recalibration setelah test: `False`.
 - Threshold reselection setelah test: `False`.
+
+## Kontrak serving Fase 7
+
+Artifact yang sama disajikan melalui kontrak inference `1.0.0`. Startup API
+memverifikasi hash model, locked policy, completion Fase 6, dan fitted feature
+order. Model tidak di-fit, dikalibrasi, atau dipilih ulang saat serving.
+
+Single scoring hanya menghasilkan probability, risk band, dan diagnostic
+fixed-threshold signal. Exact capacity 5% hanya dihitung untuk satu batch yang
+dinyatakan sebagai complete operational decision window. Reason codes belum
+tersedia dan tidak diaproksimasi dari global feature importance.
+
+FastAPI dan Streamlit pada repository adalah reference implementation untuk
+portofolio. Sebelum penggunaan nyata, deployment memerlukan TLS, auth,
+rate/body-size limit, durable audit trail, monitoring data quality/drift,
+validasi populasi baru, security review, dan load test.

@@ -67,7 +67,7 @@ def temporal_dataframe() -> pd.DataFrame:
 
 def test_package_version_is_defined() -> None:
     """Ensure the package version is defined."""
-    assert __version__ == "0.1.0"
+    assert __version__ == "0.2.0"
 
 
 def test_valid_base_dataframe_passes_schema() -> None:

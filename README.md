@@ -10,10 +10,10 @@ pemeriksaan manual.
 
 ## Status proyek
 
-Source code saat ini mencakup Fase 6: evaluasi final satu kali pada untouched
-test month 7. Workflow menulis freeze manifest sebelum test dibuka dan memakai
-kembali hasil tersimpan pada eksekusi berikutnya agar test tidak dievaluasi
-berulang kali.
+Source code saat ini mencakup Fase 7: artifact-locked inference API, Streamlit
+demo, dan production prediction contract. Serving hanya memakai model yang
+lolos evaluasi final satu kali pada untouched test month 7; tidak ada fitting,
+recalibration, atau threshold reselection saat API berjalan.
 
 ## Tujuan utama
 
@@ -178,14 +178,75 @@ test tidak boleh dipakai untuk mengubah model yang sama lalu diklaim sebagai
 evaluasi untouched test baru. Reporting alert hanya memicu investigasi dan
 dokumentasi.
 
+## Menjalankan inference API dan Streamlit Fase 7
+
+Fase 7 membutuhkan artifact lokal Fase 5 dan Fase 6 yang telah lolos workflow
+sebelumnya. Khususnya:
+
+```text
+artifacts/phase5/calibrated_review_model.joblib
+artifacts/phase5/phase5_metadata.json
+artifacts/phase6/phase6_metadata.json
+artifacts/phase6/final_evaluation_completion.json
+```
+
+Install dependency serving dan jalankan API dari root repository:
+
+```text
+python -m pip install -e ".[dev,serve]"
+python -m uvicorn app.api:app --host 127.0.0.1 --port 8000
+```
+
+Startup bersifat fail-closed. API hanya ready jika hash model, locked policy,
+bukti completion Fase 6, calibrator, capacity rate, dan fitted feature order
+semuanya cocok. Buka dokumentasi interaktif di `http://127.0.0.1:8000/docs`.
+
+Pada terminal kedua, jalankan demo:
+
+```text
+python -m streamlit run app/streamlit_app.py
+```
+
+Demo tersedia di `http://localhost:8501`. Streamlit hanya memanggil API dan
+tidak memuat model maupun dataset.
+
+Untuk menguji single request dari PowerShell:
+
+```powershell
+$body = Get-Content .\examples\single_request.json -Raw
+
+Invoke-RestMethod `
+    -Method Post `
+    -Uri "http://127.0.0.1:8000/v1/predict" `
+    -ContentType "application/json" `
+    -Body $body
+```
+
+Batch request memakai `examples/batch_request.json`. Exact-capacity result
+hanya sah jika daftar aplikasi benar-benar satu complete decision window.
+Single endpoint sengaja mengembalikan `exact_capacity_review: null`.
+Batch contoh hanya untuk smoke test schema; ukurannya terlalu kecil untuk
+mewakili kapasitas operasional 5%.
+
+Alternatif container:
+
+```text
+docker compose up --build
+```
+
+Compose menjalankan API pada port `8000`, Streamlit pada port `8501`, dan
+memasang folder `artifacts/` read-only ke container API.
+
 ## Dokumentasi
 
 - docs/project_charter.md
 - docs/prediction_time_contract.md
+- docs/production_prediction_contract.md
 - docs/architecture.md
 - reports/phase4_model_selection.md
 - reports/phase5_calibration_threshold.md
 - reports/phase6_final_evaluation.md
+- reports/phase7_inference_serving.md
 
 ## Lisensi
 

@@ -42,6 +42,7 @@ def load_config(path: str | Path = DEFAULT_CONFIG_PATH) -> dict[str, Any]:
         "final_evaluation",
         "artifacts",
         "reports",
+        "inference",
     }
     missing_sections = sorted(required_sections - set(config))
 

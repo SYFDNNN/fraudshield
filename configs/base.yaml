@@ -272,6 +272,19 @@ final_evaluation:
         - 0.6
         - 1.1
 
+inference:
+  contract_version: "1.0.0"
+  model_artifact: artifacts/phase5/calibrated_review_model.joblib
+  phase5_metadata_artifact: artifacts/phase5/phase5_metadata.json
+  phase6_metadata_artifact: artifacts/phase6/phase6_metadata.json
+  phase6_completion_artifact: artifacts/phase6/final_evaluation_completion.json
+  expected_model_sha256: 23e59ddb6379608247bfa27f03c8a3e119639313edf0056ea03848892d6eb3e3
+  expected_phase6_policy_sha256: 49d08ee7c962ad8293c8de52a65f69656cbd4d62b77c5e3a3691d0d5fbbbfbb9
+  model_version_prefix: fraudshield-xgb-sigmoid-v1
+  threshold_policy_version: review-capacity-5pct-validation-m6-v1
+  maximum_batch_size: 5000
+  automated_rejection_allowed: false
+
 artifacts:
   directory: artifacts
   phase3_directory: artifacts/phase3

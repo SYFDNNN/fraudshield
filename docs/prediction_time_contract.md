@@ -106,14 +106,18 @@ preprocessing pipeline yang di-fit hanya pada training set.
 
 ## Model Output
 
-Model akan menghasilkan:
+Kontrak inference Fase 7 menghasilkan:
 
 - `fraud_probability`
-- `risk_category`
-- `reason_codes`
+- `risk_band`
 - `model_version`
 - `threshold_policy_version`
 - `review_rank`
+
+`review_rank` hanya tersedia untuk satu complete decision window pada batch
+endpoint. Reason code belum tersedia pada Fase 7; API mengembalikan
+`explanation_status: not_available_in_phase7` dan list kosong agar tidak
+membuat penjelasan yang tidak didukung model.
 
 ## Decision Workflow
 
@@ -126,6 +130,10 @@ Prediksi bukan bukti fraud dan bukan perintah otomatis untuk menolak applicant.
 
 Input yang tidak sesuai schema harus menghasilkan validation error. Sistem tidak
 boleh mengarang nilai untuk field wajib yang tidak tersedia.
+
+Target `fraud_bool`, temporal split field `month`, dan fitur yang dikeluarkan
+dari model ditolak oleh schema inference. Kontrak transport dan operasional
+lengkap tersedia pada `docs/production_prediction_contract.md`.
 
 ## Delayed Labels
 
