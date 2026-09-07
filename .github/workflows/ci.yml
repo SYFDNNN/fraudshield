@@ -7,6 +7,8 @@ on:
 jobs:
   phase-zero-validation:
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: .
 
     steps:
       - name: Mengambil repository
@@ -27,4 +29,4 @@ jobs:
         run: ruff check src app tests
 
       - name: Menjalankan pengujian
-        run: pytest
+        run: python -m pytest
