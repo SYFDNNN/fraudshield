@@ -1,4 +1,4 @@
-"""FastAPI service for artifact-locked FraudShield inference."""
+"""FastAPI service for artifact-locked inference and local explanations."""
 
 from __future__ import annotations
 
@@ -64,7 +64,8 @@ def create_app(
         title="FraudShield Inference API",
         description=(
             "Probabilitas fraud terkalibrasi untuk prioritas human review. "
-            "Automated rejection tidak diizinkan."
+            "TreeSHAP menjelaskan margin model dasar; automated rejection "
+            "tidak diizinkan."
         ),
         version=CONTRACT_VERSION,
         lifespan=lifespan,

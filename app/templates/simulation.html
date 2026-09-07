@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+
+{% block title %}Simulation Playground{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/simulation.css') }}">
+{% endblock %}
+
+{% block content %}
+<header class="fs-workspace-header">
+    <span class="fs-eyebrow">SINGLE ASSESSMENT</span>
+    <div class="fs-workspace-title-row">
+        <div>
+            <h1>Simulation Playground</h1>
+            <p>Uji satu pengajuan sintetis, baca probabilitas terkalibrasi, dan audit alasan lokal model.</p>
+        </div>
+        <span class="fs-page-chip">Synthetic data only</span>
+    </div>
+</header>
+
+<ol class="fs-process-strip" aria-label="Alur simulasi">
+    <li class="is-active"><span>01</span><strong>Configure</strong><small>Input sintetis</small></li>
+    <li><span>02</span><strong>Score</strong><small>Probabilitas</small></li>
+    <li><span>03</span><strong>Explain</strong><small>TreeSHAP</small></li>
+    <li><span>04</span><strong>Decide</strong><small>Human review</small></li>
+</ol>
+
+<div class="fs-simulation-layout">
+    <!-- Left: Form -->
+    <div>
+        <div class="fs-form-section">
+            <div class="fs-form-heading">
+                <span>INPUT SIMULASI</span>
+                <h3>Data pengajuan</h3>
+                <p>Delapan input utama dapat diedit. Sembilan belas sinyal sistem terkunci secara default dan hanya terbuka pada mode eksperimen.</p>
+            </div>
+            
+            <div id="alertContainer" aria-live="polite"></div>
+            
+            <!-- Preset Selector -->
+            <div class="fs-form-subsection">
+                <h4>Pilih skenario simulasi</h4>
+                <div class="fs-preset-selector">
+                    <button type="button" class="fs-preset-btn active" data-preset="rendah">
+                        <span>01</span>
+                        <strong>Risiko rendah</strong>
+                    </button>
+                    <button type="button" class="fs-preset-btn" data-preset="menengah">
+                        <span>02</span>
+                        <strong>Risiko menengah</strong>
+                    </button>
+                    <button type="button" class="fs-preset-btn" data-preset="tinggi">
+                        <span>03</span>
+                        <strong>Risiko tinggi</strong>
+                    </button>
+                </div>
+                <div class="fs-preset-description" id="presetDescription">
+                    Sinyal identitas dan riwayat relatif stabil. Preset hanya contoh input; kategori akhir tetap dihitung model.
+                </div>
+            </div>
+            
+            <!-- Experiment Mode Toggle -->
+            <div class="fs-toggle-container">
+                <button
+                    type="button"
+                    class="fs-toggle"
+                    id="experimentToggle"
+                    role="switch"
+                    aria-checked="false"
+                    aria-labelledby="experimentToggleLabel"
+                ></button>
+                <label class="fs-toggle-label" id="experimentToggleLabel">
+                    <strong>Mode eksperimen</strong>
+                    <span>Izinkan edit 19 sinyal sistem</span>
+                </label>
+            </div>
+            
+            <!-- Application ID -->
+            <div class="fs-form-group">
+                <label class="fs-label" for="applicationId">
+                    ID pengajuan anonim
+                </label>
+                <input type="text" 
+                       class="fs-input" 
+                       id="applicationId" 
+                       value="demo-rendah-001"
+                       placeholder="demo-application-001">
+                <p class="fs-help-text">
+                    Technical field: application_id. Identifier teknis yang stabil. Jangan gunakan nama, email, nomor telepon, atau nomor identitas.
+                </p>
+            </div>
+            
+            <!-- Profil Pemohon -->
+            <div class="fs-form-subsection">
+                <h4>Profil pemohon</h4>
+                <p>Kondisi dasar dan riwayat alamat.</p>
+                
+                <div class="fs-form-grid">
+                    <div class="fs-form-group">
+                        <label class="fs-label" for="income">
+                            Pendapatan (skala dataset)
+                        </label>
+                        <input type="range" 
+                               class="fs-input" 
+                               id="income" 
+                               min="0.1" 
+                               max="0.9" 
+                               step="0.1" 
+                               value="0.4">
+                        <output id="incomeValue" class="fs-text-small fs-text-muted">0.4</output>
+                        <p class="fs-help-text">
+                            Nilai terstandardisasi dari dataset sintetis; bukan rupiah atau dolar dan tidak dapat dikonversi langsung.
+                        </p>
+                    </div>
+                    
+                    <div class="fs-form-group">
+                        <label class="fs-label" for="customerAge">
+                            Usia pemohon
+                        </label>
+                        <input type="number" 
+                               class="fs-input" 
+                               id="customerAge" 
+                               min="10" 
+                               max="90" 
+                               step="1" 
+                               value="50">
+                        <p class="fs-help-text">
+                            Usia dalam rentang yang diterima kontrak model.
+                        </p>
+                    </div>
+                    
+                    <div class="fs-form-group">
+                        <label class="fs-label" for="currentAddressMonths">
+                            Lama di alamat saat ini (bulan)
+                        </label>
+                        <input type="number" 
+                               class="fs-input" 
+                               id="currentAddressMonths" 
+                               min="-1" 
+                               step="1" 
+                               value="72">
+                        <p class="fs-help-text">
+                            Gunakan -1 hanya jika informasi tidak tersedia.
+                        </p>
+                    </div>
+                    
+                    <div class="fs-form-group">
+                        <label class="fs-label" for="intendedBalconAmount">
+                            Saldo awal yang direncanakan (unit dataset)
+                        </label>
+                        <input type="number" 
+                               class="fs-input" 
+                               id="intendedBalconAmount" 
+                               step="1" 
+                               value="100">
+                        <p class="fs-help-text">
+                            Satuan asli dataset tidak menetapkan mata uang. Nilai negatif menandai informasi yang tidak tersedia.
+                        </p>
+                    </div>
+                    
+                    <div class="fs-form-group">
+                        <label class="fs-label" for="hasOtherCards">
+                            Memiliki kartu lain
+                        </label>
+                        <select class="fs-select" id="hasOtherCards">
+                            <option value="0">Tidak</option>
+                            <option value="1" selected>Ya</option>
+                        </select>
+                        <p class="fs-help-text">
+                            Pernyataan pemohon atau sinyal dari sistem hulu.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Rencana dan Validasi -->
+            <div class="fs-form-subsection">
+                <h4>Rencana dan validasi</h4>
+                <p>Parameter pengajuan serta sinyal verifikasi hulu.</p>
+                
+                <div class="fs-form-grid">
+                    <div class="fs-form-group">
+                        <label class="fs-label" for="proposedCreditLimit">
+                            Limit kredit yang diajukan (unit dataset)
+                        </label>
+                        <input type="number" 
+                               class="fs-input" 
+                               id="proposedCreditLimit" 
+                               min="190" 
+                               max="2100" 
+                               step="10" 
+                               value="500">
+                        <p class="fs-help-text">
+                            Besaran pada skala dataset sintetis, bukan IDR atau USD.
+                        </p>
+                    </div>
+                    
+                    <div class="fs-form-group">
+                        <label class="fs-label" for="phoneMobileValid">
+                            Nomor ponsel lolos validasi format
+                        </label>
+                        <select class="fs-select" id="phoneMobileValid">
+                            <option value="0">Tidak</option>
+                            <option value="1" selected>Ya</option>
+                        </select>
+                        <p class="fs-help-text">
+                            Sinyal ya/tidak dari pemeriksaan hulu; demo tidak meminta atau memverifikasi nomor telepon nyata.
+                        </p>
+                    </div>
+                    
+                    <div class="fs-form-group">
+                        <label class="fs-label" for="foreignRequest">
+                            Permintaan lintas negara
+                        </label>
+                        <select class="fs-select" id="foreignRequest">
+                            <option value="0" selected>Tidak</option>
+                            <option value="1">Ya</option>
+                        </select>
+                        <p class="fs-help-text">
+                            Menandai ketidaksesuaian negara asal permintaan terhadap konteks onboarding yang ditentukan sistem hulu.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- System Signals (Expandable) -->
+            <div class="fs-expandable" id="systemSignalsExpand">
+                <button type="button" class="fs-expandable-header" aria-expanded="false">
+                    <span>
+                        <strong>Sinyal sistem</strong>
+                        <small>Dihitung otomatis · 19 field</small>
+                    </span>
+                    <span class="fs-expandable-icon">▼</span>
+                </button>
+                <div class="fs-expandable-content">
+                    <div class="fs-expandable-body" id="systemSignalsBody">
+                        <div id="systemModeAlert" class="fs-alert fs-alert-info" style="margin-bottom: var(--space-lg);">
+                            Mode normal aktif: 19 field berikut read-only karena biasanya dihitung atau dipasok sistem bank. Masing-masing hanyalah sinyal statistik, bukan bukti kepalsuan.
+                        </div>
+                        
+                        <!-- System signals fields will be populated by JavaScript -->
+                        <div id="systemFieldsContainer"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Submit Section -->
+            <div class="fs-submit-section">
+                <button type="button" class="fs-btn fs-btn-primary fs-btn-large" id="submitBtn">
+                    Jalankan Prediksi
+                </button>
+                <button type="button" class="fs-btn fs-btn-secondary fs-btn-large" id="resetBtn">
+                    Reset Form
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Right: Result Panel -->
+    <div class="fs-result-panel">
+        <div class="fs-result-card">
+            <div class="fs-result-header">
+                <div>
+                    <span>HASIL PREDIKSI</span>
+                    <h3>Risk signal</h3>
+                </div>
+                <em>Live API</em>
+            </div>
+            <div class="fs-result-body">
+                <div id="resultContent" class="fs-result-empty" aria-live="polite">
+                    <span class="fs-result-orbit" aria-hidden="true"></span>
+                    <div>
+                        <p><strong>Menunggu input</strong></p>
+                        <p>Pilih skenario atau sesuaikan form, lalu jalankan prediksi.</p>
+                    </div>
+                </div>
+            </div>
+            <footer class="fs-result-footnote">
+                Skor menunjukkan indikasi risiko, bukan kepastian fraud.
+            </footer>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/simulation.js') }}" defer></script>
+{% endblock %}

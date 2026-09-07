@@ -1,7 +1,7 @@
 # Arsitektur FraudShield
 
-Arsitektur sampai Fase 7 memisahkan development, calibration, selection, final
-evaluation, dan serving berdasarkan waktu serta trust boundary.
+Arsitektur sampai Fase 8 memisahkan development, calibration, selection, final
+evaluation, serving, dan explainability berdasarkan waktu serta trust boundary.
 
 ```mermaid
 flowchart TD
@@ -12,6 +12,7 @@ flowchart TD
     E --> F["Final test: month 7"]
     F --> G["Artifact gate"]
     G --> H["Inference API"]
+    H --> I["TreeSHAP dan reason codes"]
 ```
 
 Aturan utama arsitektur adalah satu pipeline preprocessing yang sama untuk
@@ -53,18 +54,19 @@ tidak membaca dataset.
 - Tidak ada automated rejection.
 - Reporting alert tidak menjalankan tuning otomatis.
 
-## Serving Fase 7
+## Serving dan explainability Fase 7–8
 
 ```mermaid
 flowchart TD
-    A["Client atau Streamlit"] --> B["Strict FastAPI schema"]
+    A["Flask UI atau external client"] --> B["Strict FastAPI schema"]
     B --> C["Artifact-locked runtime"]
     C --> D["Calibrated model pipeline"]
-    C --> E["Aggregate telemetry"]
+    D --> E["Native XGBoost TreeSHAP"]
+    C --> F["Aggregate telemetry"]
 ```
 
-FastAPI adalah satu-satunya komponen yang memuat artifact model. Streamlit
-hanya menjadi HTTP client dan tidak memiliki akses ke raw dataset, label, atau
+FastAPI adalah satu-satunya komponen yang memuat artifact model. Flask UI
+menjadi HTTP client dan tidak memiliki akses ke raw dataset, label, atau
 model. Runtime memverifikasi hash model dan bukti evaluasi final sebelum
 readiness berhasil.
 
@@ -72,6 +74,13 @@ Single request menghasilkan probability dan fixed-threshold signal tanpa
 exact-capacity claim. Batch request harus merepresentasikan seluruh decision
 window; runtime kemudian memberi ranking deterministik dan tepat
 `ceil(rows × 5%)` review flags.
+
+TreeSHAP menjelaskan raw margin XGBoost dari model dasar yang sama dan tidak
+melakukan fitting. Kontribusi fitur hasil preprocessing digabung kembali ke
+field mentah, dipilih maksimum lima alasan lokal, lalu dikirim bersama tindakan
+analyst yang tidak pernah berupa penolakan otomatis. Kalibrator sigmoid tetap
+menentukan probabilitas publik; SHAP tidak diklaim sebagai dekomposisi langsung
+dari probabilitas yang sudah dikalibrasi.
 
 Artifact model di-mount read-only pada container. Image berjalan sebagai user
 non-root. TLS, authentication, rate limiting, durable audit storage, dan

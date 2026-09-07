@@ -2,13 +2,17 @@
 
 ## Status dan tujuan
 
-Kontrak versi `1.0.0` mendefinisikan batas integrasi inference FraudShield.
+Kontrak versi `2.0.0` mendefinisikan batas integrasi inference FraudShield.
 Layanan mengembalikan probabilitas fraud terkalibrasi dan sinyal prioritas
 untuk **review manual**. Layanan tidak menerima target, tidak melatih model,
 dan tidak boleh mengeluarkan keputusan penerimaan atau penolakan otomatis.
 
 OpenAPI aktif pada `/openapi.json` adalah schema transport yang dapat dibaca
 mesin. Dokumen ini adalah kontrak semantik dan operasionalnya.
+
+Versi mayor berubah karena schema reason code menjadi objek terstruktur dan
+`analyst_action` menjadi field response wajib. Client kontrak `1.x` harus
+memperbarui schema respons sebelum memakai endpoint ini.
 
 ## Artifact deployment yang dikunci
 
@@ -102,10 +106,37 @@ Response utamanya berisi:
 - `exact_capacity_review: null` dan `review_rank: null`.
 - `model_version`, `threshold_policy_version`, dan `calibrator`.
 - `automated_rejection_allowed: false`.
-- `explanation_status: not_available_in_phase7` dan `reason_codes: []`.
+- `explanation_status`, metode, scope, base value, dan raw model margin.
+- Maksimum lima `reason_codes` lokal yang terstruktur dan directional.
+- `analyst_action` yang tetap mewajibkan keputusan manusia.
 
 Single prediction tidak mengetahui populasi antrean. Karena itu ia tidak boleh
 mengklaim suatu aplikasi masuk exact top 5%.
+
+## Explainability dan tindakan analyst
+
+Reason code dibuat dengan native XGBoost TreeSHAP (`pred_contribs`) pada raw
+margin model dasar sebelum sigmoid calibration. Metode ini tidak melatih ulang
+model dan tidak membaca label. Kontribusi one-hot category dan semantic-missing
+indicator dijumlahkan kembali ke 27 raw field kontrak sebelum alasan terbesar
+dipilih.
+
+Setiap reason code memuat:
+
+- kode stabil `SHAP_UP_*` atau `SHAP_DOWN_*`;
+- nama field dan label yang mudah dibaca;
+- arah `increases_risk` atau `decreases_risk`;
+- nilai kontribusi lokal dan proporsi kepentingan absolut.
+
+Raw nilai input tidak disalin ke reason code. SHAP menjelaskan perilaku model
+untuk satu baris, bukan sebab fraud, kebenaran identitas, atau bukti hukum.
+Karena sigmoid calibration mengubah skala probabilitas, penjumlahan SHAP berlaku
+pada raw margin XGBoost dan tidak diklaim sebagai dekomposisi langsung dari
+`fraud_probability` yang sudah dikalibrasi.
+
+`analyst_action` hanya dapat meminta pemeriksaan manusia, menandai kandidat
+untuk dimasukkan ke batch lengkap, atau melanjutkan kontrol standar. Nilai
+`human_decision_required` selalu `true`; tidak ada action approve/reject.
 
 ## Exact-capacity batch
 
@@ -134,6 +165,11 @@ Output mempertahankan urutan input, sedangkan `review_rank` menunjukkan posisi
 global. Client harus menyimpan `batch_id`, model version, policy version, dan
 hasil lengkap sebagai audit record. Memecah satu decision window menjadi
 beberapa request akan mengubah kapasitas dan merupakan pelanggaran kontrak.
+
+Pada batch, `manual_review_queue` hanya diberikan kepada baris dengan
+`exact_capacity_review: true`. Baris lain tetap dapat memiliki risk band atau
+fixed-threshold signal, tetapi tidak boleh diperlakukan sebagai anggota kuota
+review window tersebut.
 
 ## Error contract
 

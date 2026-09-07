@@ -1,1 +1,1 @@
--e .[dev,serve]
+-e .[dev,serve,flask]

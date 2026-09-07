@@ -34,7 +34,7 @@ Dataset dan model tidak ditujukan untuk:
 
 - Mengambil keputusan perbankan nyata secara otomatis.
 - Menolak aplikasi rekening tanpa human review.
-- Mendeteksi fraud transaksi setelah rekening aktif.
+- Mendeteksi fraud transaksi setelah rekening aktif (di luar cakupan proyek).
 - Menjadi sistem produksi tanpa validasi terhadap data bank sebenarnya.
 - Membuat klaim bahwa model bebas dari bias atau adil untuk seluruh populasi.
 

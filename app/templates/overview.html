@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Overview{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/overview.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="linear-hero" aria-labelledby="overviewTitle">
+    <div class="linear-hero-intro">
+        <a class="linear-badge" href="{{ url_for('main.simulation') }}">
+            <span class="linear-badge-label">NEW</span>
+            <span>TreeSHAP reason codes</span>
+        </a>
+
+        <h1 id="overviewTitle">
+            The fraud review system
+            <span>for focused risk teams.</span>
+        </h1>
+
+        <div class="linear-hero-bottom">
+            <p>
+                Prioritaskan pengajuan pembukaan rekening, pahami alasan lokal model,
+                lalu teruskan keputusan akhir kepada analyst manusia.
+            </p>
+            <div class="linear-hero-actions">
+                <a class="linear-btn linear-btn-primary" href="{{ url_for('main.simulation') }}">
+                    Mulai simulasi
+                </a>
+                <a class="linear-btn linear-btn-secondary" href="{{ url_for('main.review_queue') }}">
+                    Buka review queue
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="fs-product-stage" aria-label="Alur kerja FraudShield">
+    <header class="fs-stage-toolbar">
+        <div class="fs-stage-breadcrumb">
+            <span class="fs-mini-mark" aria-hidden="true">FS</span>
+            <strong>FraudShield</strong>
+            <i>/</i>
+            <span>Risk Operations</span>
+        </div>
+        <div class="fs-stage-status fs-stage-offline" id="stageApiStatus">
+            <span aria-hidden="true"></span>
+            <strong id="stageApiLabel">Memeriksa API</strong>
+        </div>
+    </header>
+
+    <div class="fs-stage-body">
+        <aside class="fs-stage-nav" aria-label="Tahapan keputusan">
+            <span>WORKFLOW</span>
+            <div class="is-active"><i>01</i><strong>Score</strong></div>
+            <div><i>02</i><span>Explain</span></div>
+            <div><i>03</i><span>Prioritize</span></div>
+            <div><i>04</i><span>Decide</span></div>
+        </aside>
+
+        <div class="fs-stage-main">
+            <div class="fs-stage-title">
+                <div>
+                    <span>MODEL PIPELINE</span>
+                    <h2>Decision context, end to end</h2>
+                </div>
+                <em>Human review only</em>
+            </div>
+
+            <div class="fs-pipeline-list">
+                <div>
+                    <i>01</i>
+                    <span>Input contract</span>
+                    <strong>27 validated signals</strong>
+                </div>
+                <div>
+                    <i>02</i>
+                    <span>Risk scoring</span>
+                    <strong>XGBoost + sigmoid</strong>
+                </div>
+                <div>
+                    <i>03</i>
+                    <span>Local evidence</span>
+                    <strong>TreeSHAP reason codes</strong>
+                </div>
+                <div>
+                    <i>04</i>
+                    <span>Decision window</span>
+                    <strong>Exact-capacity queue</strong>
+                </div>
+            </div>
+        </div>
+
+        <aside class="fs-stage-context">
+            <span>ACTIVE CONTEXT</span>
+            <dl>
+                <div><dt>Model</dt><dd>XGBoost</dd></div>
+                <div><dt>Calibrator</dt><dd>Sigmoid</dd></div>
+                <div><dt>Review cap</dt><dd>5%</dd></div>
+                <div><dt>Final authority</dt><dd>Human</dd></div>
+            </dl>
+        </aside>
+    </div>
+</section>
+
+<section class="fs-overview-section" aria-labelledby="postureTitle">
+    <div class="fs-overview-heading">
+        <div>
+            <span class="fs-eyebrow">SYSTEM POSTURE</span>
+            <h2 id="postureTitle">Deployment context</h2>
+        </div>
+        <p>Live contract state · no fabricated operational KPIs</p>
+    </div>
+
+    <div class="linear-grid fs-system-grid">
+        <article class="linear-grid-item" id="systemApi">
+            <span class="fs-metric-index">01</span>
+            <h3>Inference API</h3>
+            <div class="value" id="apiLabel">Memeriksa…</div>
+            <div class="label" id="apiNote">Menghubungkan ready endpoint</div>
+        </article>
+        <article class="linear-grid-item" id="systemModel">
+            <span class="fs-metric-index">02</span>
+            <h3>Model build</h3>
+            <div class="value fs-value-compact" id="modelLabel">—</div>
+            <div class="label" id="modelNote">—</div>
+        </article>
+        <article class="linear-grid-item" id="systemContract">
+            <span class="fs-metric-index">03</span>
+            <h3>Prediction contract</h3>
+            <div class="value" id="contractLabel">—</div>
+            <div class="label">Versioned prediction-time schema</div>
+        </article>
+        <article class="linear-grid-item" id="systemReview">
+            <span class="fs-metric-index">04</span>
+            <h3>Review policy</h3>
+            <div class="value" id="reviewLabel">—</div>
+            <div class="label">Exact capacity · human decision</div>
+        </article>
+    </div>
+</section>
+
+<section class="fs-overview-section fs-session-section" aria-labelledby="activityTitle">
+    <div class="fs-overview-heading">
+        <div>
+            <span class="fs-eyebrow">SESSION ACTIVITY</span>
+            <h2 id="activityTitle">Continue where you left off</h2>
+        </div>
+        <p>Tersimpan hanya selama sesi browser ini</p>
+    </div>
+
+    <div class="fs-activity-grid">
+        <article class="fs-activity-panel">
+            <div class="fs-panel-heading">
+                <div>
+                    <span>SINGLE ASSESSMENT</span>
+                    <h3>Latest risk signal</h3>
+                </div>
+                <em>Playground</em>
+            </div>
+            <div id="singleActivity" class="fs-empty-state">
+                <span class="fs-empty-orbit" aria-hidden="true"></span>
+                <div>
+                    <strong>Belum ada hasil simulasi</strong>
+                    <span>Jalankan contoh sintetis untuk melihat probabilitas, reason code, dan tindakan analyst.</span>
+                </div>
+            </div>
+            <a href="{{ url_for('main.simulation') }}" class="linear-btn linear-btn-secondary fs-panel-action">
+                Buka Simulation
+            </a>
+        </article>
+
+        <article class="fs-activity-panel">
+            <div class="fs-panel-heading">
+                <div>
+                    <span>DECISION WINDOW</span>
+                    <h3>Latest review queue</h3>
+                </div>
+                <em>Batch</em>
+            </div>
+            <div id="batchActivity" class="fs-empty-state">
+                <span class="fs-empty-orbit" aria-hidden="true"></span>
+                <div>
+                    <strong>Belum ada antrean sesi</strong>
+                    <span>Unggah decision window lengkap untuk membentuk prioritas review yang sah.</span>
+                </div>
+            </div>
+            <a href="{{ url_for('main.review_queue') }}" class="linear-btn linear-btn-secondary fs-panel-action">
+                Buka Review Queue
+            </a>
+        </article>
+    </div>
+</section>
+
+<aside class="fs-boundary-card" aria-label="Batas penggunaan FraudShield">
+    <div class="fs-boundary-icon" aria-hidden="true">!</div>
+    <div>
+        <strong>Batas keputusan tetap aktif</strong>
+        <span>
+            Data demo bersifat sintetis. Skor dan TreeSHAP adalah sinyal prioritas,
+            bukan bukti penipuan atau dasar penolakan otomatis.
+        </span>
+    </div>
+</aside>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/overview.js') }}" defer></script>
+{% endblock %}

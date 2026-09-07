@@ -229,7 +229,23 @@ def test_single_scoring_does_not_claim_exact_capacity() -> None:
     assert prediction.review_rank is None
     assert prediction.review_policy == "fixed_threshold_signal_only"
     assert prediction.automated_rejection_allowed is False
+    assert prediction.explanation_status == "unavailable"
     assert prediction.reason_codes == []
+    assert prediction.analyst_action.code == "continue_standard_checks"
+
+
+def test_single_threshold_signal_recommends_complete_batch_review() -> None:
+    """A high single score is a candidate, never an exact queue decision."""
+    prediction = runtime().score_single(
+        ApplicationInput.model_validate(
+            valid_application(similarity=0.10, foreign_request=1)
+        )
+    )
+
+    assert prediction.fixed_threshold_review is True
+    assert prediction.exact_capacity_review is None
+    assert prediction.analyst_action.code == "candidate_for_batch_review"
+    assert prediction.analyst_action.human_decision_required is True
 
 
 def test_batch_scoring_assigns_exact_capacity_and_unique_ranks() -> None:
@@ -249,6 +265,9 @@ def test_batch_scoring_assigns_exact_capacity_and_unique_ranks() -> None:
     assert sum(item.exact_capacity_review is True for item in predictions) == 1
     assert sorted(item.review_rank for item in predictions) == list(range(1, 21))
     assert all(item.review_policy == "exact_batch_capacity" for item in predictions)
+    selected = next(item for item in predictions if item.exact_capacity_review)
+    assert selected.analyst_action.code == "manual_review_queue"
+    assert selected.analyst_action.human_decision_required is True
 
 
 def test_batch_scoring_is_order_invariant_for_stable_ids() -> None:
@@ -296,6 +315,7 @@ def test_contract_documents_human_review_boundaries() -> None:
     assert contract["required_model_features"] == list(MODEL_FEATURE_NAMES)
     assert contract["automated_rejection_allowed"] is False
     assert contract["reason_codes_available"] is False
+    assert contract["explanation_method"] is None
     assert contract["batch_prediction_policy"] == "exact_batch_capacity"
     assert "complete_decision_window" in contract["batch_precondition"]
     assert contract["unknown_categories"].startswith("accepted")
@@ -368,6 +388,10 @@ def _write_runtime_artifacts(tmp_path: Path) -> Path:
             "expected_model_sha256": model_hash,
             "expected_phase6_policy_sha256": policy_hash,
             "maximum_batch_size": 100,
+            "explainability": {
+                "enabled": False,
+                "maximum_reason_codes": 5,
+            },
         }
     )
     config_directory = tmp_path / "configs"

@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 from app.api import create_app
 from fraudshield.predict import (
     CONTRACT_VERSION,
+    AnalystAction,
     ApplicationInput,
     InferenceArtifactIdentity,
     InferenceContractError,
@@ -110,6 +111,33 @@ class StubRuntime(InferenceRuntime):
                 self.identity.threshold_policy_version
             ),
             calibrator=self.identity.calibrator_name,
+            explanation_status="unavailable",
+            analyst_action=AnalystAction(
+                code=(
+                    "manual_review_queue"
+                    if selected is True
+                    else (
+                        "candidate_for_batch_review"
+                        if selected is None
+                        else "continue_standard_checks"
+                    )
+                ),
+                label=(
+                    "Masukkan ke antrean pemeriksaan manusia"
+                    if selected is True
+                    else (
+                        "Kandidat pemeriksaan pada batch lengkap"
+                        if selected is None
+                        else "Lanjutkan pemeriksaan standar"
+                    )
+                ),
+                priority=(
+                    "tinggi"
+                    if selected is True or selected is None
+                    else "normal"
+                ),
+                guidance=["Keputusan akhir tetap dilakukan manusia."],
+            ),
         )
 
     def score_single(self, application: ApplicationInput) -> PredictionOutput:
@@ -176,6 +204,9 @@ def test_single_prediction_never_claims_exact_capacity(
     assert payload["prediction"]["exact_capacity_review"] is None
     assert payload["prediction"]["review_rank"] is None
     assert payload["prediction"]["automated_rejection_allowed"] is False
+    assert payload["prediction"]["analyst_action"][
+        "human_decision_required"
+    ] is True
 
 
 def test_schema_rejects_target_and_unknown_fields(client: TestClient) -> None:

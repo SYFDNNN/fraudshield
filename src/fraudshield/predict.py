@@ -1,4 +1,4 @@
-"""Strict, artifact-locked inference contract for FraudShield Phase 7."""
+"""Strict, artifact-locked inference contract for FraudShield serving."""
 
 from __future__ import annotations
 
@@ -20,13 +20,20 @@ from fraudshield.config import (
     load_config,
     resolve_project_path,
 )
+from fraudshield.explain import (
+    TREE_SHAP_METHOD,
+    TREE_SHAP_SCOPE,
+    ExplainabilityError,
+    LocalExplanation,
+    XGBoostTreeShapExplainer,
+)
 from fraudshield.thresholds import (
     assign_risk_bands,
     capacity_review_flags,
     threshold_review_flags,
 )
 
-CONTRACT_VERSION = "1.0.0"
+CONTRACT_VERSION = "2.0.0"
 MAXIMUM_CONTRACT_BATCH_SIZE = 5_000
 MODEL_FEATURE_NAMES: tuple[str, ...] = (
     "income",
@@ -160,6 +167,35 @@ class BatchPredictionRequest(BaseModel):
     )
 
 
+class ReasonCode(BaseModel):
+    """One local, directional TreeSHAP signal for analyst interpretation."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    code: str = Field(pattern=r"^SHAP_(UP|DOWN)_[A-Z0-9_]+$")
+    feature: str
+    feature_label: str
+    direction: Literal["increases_risk", "decreases_risk"]
+    shap_value: float
+    importance_share: float = Field(ge=0.0, le=1.0)
+
+
+class AnalystAction(BaseModel):
+    """Policy-safe next action; never an automated approval or rejection."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    code: Literal[
+        "manual_review_queue",
+        "candidate_for_batch_review",
+        "continue_standard_checks",
+    ]
+    label: str
+    priority: Literal["tinggi", "normal"]
+    guidance: list[str] = Field(min_length=1, max_length=5)
+    human_decision_required: Literal[True] = True
+
+
 class PredictionOutput(BaseModel):
     """Stable public response for one application."""
 
@@ -179,10 +215,13 @@ class PredictionOutput(BaseModel):
     threshold_policy_version: str
     calibrator: str
     automated_rejection_allowed: Literal[False] = False
-    explanation_status: Literal["not_available_in_phase7"] = (
-        "not_available_in_phase7"
-    )
-    reason_codes: list[str] = Field(default_factory=list)
+    explanation_status: Literal["available", "unavailable"]
+    explanation_method: str | None = None
+    explanation_scope: str | None = None
+    shap_base_value: float | None = None
+    raw_model_margin: float | None = None
+    reason_codes: list[ReasonCode] = Field(default_factory=list)
+    analyst_action: AnalystAction
 
 
 class SinglePredictionResponse(BaseModel):
@@ -269,6 +308,8 @@ class InferenceRuntime:
         model: CalibratedFraudModel,
         identity: InferenceArtifactIdentity,
         maximum_batch_size: int,
+        explanations_enabled: bool = False,
+        maximum_reason_codes: int = 5,
     ) -> None:
         if not isinstance(model, CalibratedFraudModel):
             raise TypeError("Inference model must be a CalibratedFraudModel.")
@@ -280,6 +321,9 @@ class InferenceRuntime:
             raise ValueError(
                 "maximum_batch_size exceeds the public contract limit."
             )
+
+        if not 1 <= maximum_reason_codes <= 10:
+            raise ValueError("maximum_reason_codes must lie between 1 and 10.")
 
         try:
             selected_columns = tuple(
@@ -304,6 +348,14 @@ class InferenceRuntime:
         self.model = model
         self.identity = identity
         self.maximum_batch_size = int(maximum_batch_size)
+        self.explainer: XGBoostTreeShapExplainer | None = None
+
+        if explanations_enabled:
+            self.explainer = XGBoostTreeShapExplainer(
+                model.base_model,
+                maximum_reasons=maximum_reason_codes,
+            )
+
         self._prediction_lock = threading.RLock()
 
     @classmethod
@@ -323,6 +375,35 @@ class InferenceRuntime:
 
         if config["review_policy"]["automated_rejection_allowed"] is not False:
             raise ValueError("Review policy must forbid automated rejection.")
+
+        explainability_config = inference_config.get("explainability", {})
+
+        if not isinstance(explainability_config, dict):
+            raise TypeError("inference.explainability must be a mapping.")
+
+        explanations_enabled = explainability_config.get("enabled") is True
+        maximum_reason_codes = int(
+            explainability_config.get("maximum_reason_codes", 5)
+        )
+
+        if explanations_enabled:
+            if explainability_config.get("method") != TREE_SHAP_METHOD:
+                raise ValueError(
+                    "Configured explainability method is unsupported."
+                )
+
+            if explainability_config.get("scope") != TREE_SHAP_SCOPE:
+                raise ValueError(
+                    "Configured explainability scope is unsupported."
+                )
+
+            if (
+                explainability_config.get("include_raw_input_values")
+                is not False
+            ):
+                raise ValueError(
+                    "Reason codes must not include raw input values."
+                )
 
         paths = {
             name: _artifact_path(config, key, config_path=config_path)
@@ -460,6 +541,8 @@ class InferenceRuntime:
             model=model,
             identity=identity,
             maximum_batch_size=int(inference_config["maximum_batch_size"]),
+            explanations_enabled=explanations_enabled,
+            maximum_reason_codes=maximum_reason_codes,
         )
 
     @property
@@ -497,7 +580,17 @@ class InferenceRuntime:
                 "device_distinct_emails_8w": -1,
                 "intended_balcon_amount": "any_negative_value",
             },
-            "reason_codes_available": False,
+            "reason_codes_available": self.explainer is not None,
+            "explanation_method": (
+                TREE_SHAP_METHOD if self.explainer is not None else None
+            ),
+            "explanation_scope": (
+                TREE_SHAP_SCOPE if self.explainer is not None else None
+            ),
+            "explanation_limitation": (
+                "Local SHAP values explain the frozen base XGBoost raw margin, "
+                "not causality and not the calibrated probability directly."
+            ),
             "automated_rejection_allowed": False,
             "input_payload_logged": False,
         }
@@ -535,6 +628,68 @@ class InferenceRuntime:
 
         return probabilities
 
+    @staticmethod
+    def _analyst_action(
+        *,
+        assign_exact_capacity: bool,
+        fixed_threshold_review: bool,
+        exact_capacity_review: bool | None,
+    ) -> AnalystAction:
+        """Translate locked policy output into a non-automated next action."""
+        if assign_exact_capacity and exact_capacity_review is True:
+            return AnalystAction(
+                code="manual_review_queue",
+                label="Masukkan ke antrean pemeriksaan manusia",
+                priority="tinggi",
+                guidance=[
+                    "Verifikasi konsistensi data pada sistem sumber.",
+                    "Periksa sinyal lokal bersama bukti pendukung yang sah.",
+                    "Catat keputusan dan alasan analyst pada case management.",
+                ],
+            )
+
+        if not assign_exact_capacity and fixed_threshold_review:
+            return AnalystAction(
+                code="candidate_for_batch_review",
+                label="Kandidat pemeriksaan pada batch lengkap",
+                priority="tinggi",
+                guidance=[
+                    "Jangan menganggap sinyal tunggal sebagai posisi antrean.",
+                    "Masukkan pengajuan ke jendela batch operasional lengkap.",
+                    "Lakukan verifikasi manusia sebelum keputusan akhir.",
+                ],
+            )
+
+        return AnalystAction(
+            code="continue_standard_checks",
+            label="Lanjutkan pemeriksaan standar",
+            priority="normal",
+            guidance=[
+                "Terapkan kontrol onboarding standar yang berlaku.",
+                "Jangan menganggap skor rendah sebagai jaminan bukan fraud.",
+                "Eskalasi jika terdapat bukti lain di luar input model.",
+            ],
+        )
+
+    @staticmethod
+    def _reason_code_outputs(
+        explanation: LocalExplanation | None,
+    ) -> list[ReasonCode]:
+        if explanation is None:
+            return []
+
+        return [
+            ReasonCode(
+                code=reason.code,
+                feature=reason.feature,
+                feature_label=reason.feature_label,
+                direction=reason.direction,
+                shap_value=reason.shap_value,
+                importance_share=reason.importance_share,
+            )
+            for reason in explanation.reason_codes
+        ]
+
     def _score(
         self,
         applications: list[ApplicationInput],
@@ -561,6 +716,7 @@ class InferenceRuntime:
             )
 
         features = self._feature_frame(applications)
+        local_explanations: list[LocalExplanation] | None = None
 
         with self._prediction_lock:
             raw_probability = self._validate_probabilities(
@@ -573,6 +729,12 @@ class InferenceRuntime:
                 expected_rows=len(features),
                 name="Calibrated",
             )
+
+            if self.explainer is not None:
+                try:
+                    local_explanations = self.explainer.explain(features)
+                except ExplainabilityError:
+                    local_explanations = None
 
         risk_bands = assign_risk_bands(
             calibrated_probability,
@@ -601,19 +763,24 @@ class InferenceRuntime:
         outputs = []
 
         for index, application in enumerate(applications):
+            fixed_threshold_review = bool(fixed_threshold_flags[index])
+            exact_capacity_review = (
+                bool(exact_capacity_flags[index])
+                if exact_capacity_flags is not None
+                else None
+            )
+            explanation = (
+                local_explanations[index]
+                if local_explanations is not None
+                else None
+            )
             outputs.append(
                 PredictionOutput(
                     application_id=application.application_id,
                     fraud_probability=float(calibrated_probability[index]),
                     risk_band=str(risk_bands[index]),
-                    fixed_threshold_review=bool(
-                        fixed_threshold_flags[index]
-                    ),
-                    exact_capacity_review=(
-                        bool(exact_capacity_flags[index])
-                        if exact_capacity_flags is not None
-                        else None
-                    ),
+                    fixed_threshold_review=fixed_threshold_review,
+                    exact_capacity_review=exact_capacity_review,
                     review_rank=(
                         int(review_ranks[index])
                         if review_ranks is not None
@@ -630,7 +797,27 @@ class InferenceRuntime:
                     ),
                     calibrator=self.identity.calibrator_name,
                     automated_rejection_allowed=False,
-                    reason_codes=[],
+                    explanation_status=(
+                        "available" if explanation is not None else "unavailable"
+                    ),
+                    explanation_method=(
+                        explanation.method if explanation is not None else None
+                    ),
+                    explanation_scope=(
+                        explanation.scope if explanation is not None else None
+                    ),
+                    shap_base_value=(
+                        explanation.base_value if explanation is not None else None
+                    ),
+                    raw_model_margin=(
+                        explanation.raw_margin if explanation is not None else None
+                    ),
+                    reason_codes=self._reason_code_outputs(explanation),
+                    analyst_action=self._analyst_action(
+                        assign_exact_capacity=assign_exact_capacity,
+                        fixed_threshold_review=fixed_threshold_review,
+                        exact_capacity_review=exact_capacity_review,
+                    ),
                 )
             )
 

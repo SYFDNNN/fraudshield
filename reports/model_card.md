@@ -100,18 +100,24 @@ membuktikan fairness atau absence of bias.
 - Recalibration setelah test: `False`.
 - Threshold reselection setelah test: `False`.
 
-## Kontrak serving Fase 7
+## Kontrak serving dan explainability Fase 8
 
-Artifact yang sama disajikan melalui kontrak inference `1.0.0`. Startup API
+Artifact yang sama disajikan melalui kontrak inference `2.0.0`. Startup API
 memverifikasi hash model, locked policy, completion Fase 6, dan fitted feature
 order. Model tidak di-fit, dikalibrasi, atau dipilih ulang saat serving.
 
 Single scoring hanya menghasilkan probability, risk band, dan diagnostic
 fixed-threshold signal. Exact capacity 5% hanya dihitung untuk satu batch yang
-dinyatakan sebagai complete operational decision window. Reason codes belum
-tersedia dan tidak diaproksimasi dari global feature importance.
+dinyatakan sebagai complete operational decision window.
 
-FastAPI dan Streamlit pada repository adalah reference implementation untuk
+Reason codes tersedia melalui native XGBoost TreeSHAP. Penjelasan berlaku pada
+raw margin model dasar sebelum sigmoid calibration; one-hot category dan
+missing indicator digabung kembali ke field kontrak. Reason code menunjukkan
+arah kontribusi lokal model, bukan sebab fraud dan bukan bukti kepalsuan. Nilai
+input asli tidak disalin ke reason code. Tindakan analyst selalu mewajibkan
+human decision dan tidak pernah berupa approve/reject otomatis.
+
+FastAPI dan Flask UI pada repository adalah reference implementation untuk
 portofolio. Sebelum penggunaan nyata, deployment memerlukan TLS, auth,
 rate/body-size limit, durable audit trail, monitoring data quality/drift,
 validasi populasi baru, security review, dan load test.

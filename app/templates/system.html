@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Model & System{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/system.css') }}">
+{% endblock %}
+
+{% block content %}
+<header class="fs-workspace-header">
+    <span class="fs-eyebrow">MODEL GOVERNANCE</span>
+    <div class="fs-workspace-title-row">
+        <div>
+            <h1>Model &amp; System</h1>
+            <p>Audit versi model, kontrak input, guardrail keputusan, dan batas kemampuan sistem.</p>
+        </div>
+        <span class="fs-page-chip">Auditable contract</span>
+    </div>
+</header>
+
+<div id="systemAlertContainer" aria-live="polite"></div>
+
+<div class="fs-system-layout">
+    <!-- Contract Overview -->
+    <section class="fs-contract-card">
+        <div class="fs-contract-header">
+            <span class="fs-contract-version" id="contractVersion">Memuat…</span>
+            <h2>Prediction contract</h2>
+            <p>Kontrak prediksi mendefinisikan field input, tipe data, semantik missing value, dan batas penggunaan API.</p>
+        </div>
+        
+        <div class="fs-contract-meta" id="contractMeta">
+            <div class="fs-meta-item">
+                <div class="fs-meta-label">Versi model</div>
+                <div class="fs-meta-value fs-meta-value-small" id="modelVersion">—</div>
+            </div>
+            <div class="fs-meta-item">
+                <div class="fs-meta-label">Calibrator</div>
+                <div class="fs-meta-value fs-meta-value-small" id="calibratorName">—</div>
+            </div>
+            <div class="fs-meta-item">
+                <div class="fs-meta-label">Kapasitas review</div>
+                <div class="fs-meta-value" id="reviewCapacity">—</div>
+            </div>
+            <div class="fs-meta-item">
+                <div class="fs-meta-label">Maksimum batch</div>
+                <div class="fs-meta-value" id="maxBatchSize">—</div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Required Fields -->
+    <section class="fs-contract-card">
+        <div class="fs-section-divider">
+            <span class="fs-eyebrow">INPUT CONTRACT</span>
+            <h3>Field input wajib</h3>
+            <p>Semua field berikut wajib ada pada setiap request single atau batch.</p>
+        </div>
+        
+        <div class="fs-field-list" id="requiredFieldsList">
+            <div class="fs-loading">Memuat field…</div>
+        </div>
+    </section>
+    
+    <!-- Forbidden Fields -->
+    <section class="fs-contract-card">
+        <div class="fs-section-divider">
+            <span class="fs-eyebrow">LEAKAGE GUARDRAIL</span>
+            <h3>Field yang dilarang</h3>
+            <p>Field berikut tidak boleh dikirim dalam request untuk mencegah kebocoran informasi masa depan.</p>
+        </div>
+        
+        <div class="fs-field-list" id="forbiddenFieldsList">
+            <div class="fs-loading">Memuat field…</div>
+        </div>
+    </section>
+    
+    <!-- Missing Value Semantics -->
+    <section class="fs-contract-card">
+        <div class="fs-section-divider">
+            <span class="fs-eyebrow">DATA SEMANTICS</span>
+            <h3>Semantik missing value</h3>
+            <p>Nilai sentinel yang digunakan untuk menandai informasi yang tidak tersedia atau tidak valid.</p>
+        </div>
+        
+        <div class="fs-policy-grid" id="missingSemanticsGrid">
+            <div class="fs-loading">Memuat semantik…</div>
+        </div>
+    </section>
+    
+    <!-- Guardrails & Boundaries -->
+    <section class="fs-guardrails-section">
+        <span class="fs-eyebrow">DECISION BOUNDARIES</span>
+        <h3>System guardrails</h3>
+        <p>FraudShield memiliki batasan keputusan yang tidak dapat diubah tanpa persetujuan eksplisit stakeholder.</p>
+        
+        <ul class="fs-guardrail-list">
+            <li>
+                <div class="fs-guardrail-icon">01</div>
+                <div class="fs-guardrail-content">
+                    <strong>No Automated Rejection</strong>
+                    <span>Sistem tidak boleh digunakan untuk menolak aplikasi secara otomatis. Skor dan reason codes adalah sinyal prioritas untuk human review.</span>
+                </div>
+            </li>
+            <li>
+                <div class="fs-guardrail-icon">02</div>
+                <div class="fs-guardrail-content">
+                    <strong>Human Final Authority</strong>
+                    <span>Keputusan akhir accept/reject harus dibuat oleh fraud analyst manusia setelah mempertimbangkan skor, alasan lokal, dan konteks tambahan.</span>
+                </div>
+            </li>
+            <li>
+                <div class="fs-guardrail-icon">03</div>
+                <div class="fs-guardrail-content">
+                    <strong>Exact Capacity Queue</strong>
+                    <span>Review queue menggunakan exact capacity constraint dengan tie-breaking deterministik. Review rate adalah hard cap, bukan target.</span>
+                </div>
+            </li>
+            <li>
+                <div class="fs-guardrail-icon">04</div>
+                <div class="fs-guardrail-content">
+                    <strong>Local Explanations Only</strong>
+                    <span>TreeSHAP reason codes bersifat lokal dan tidak kausal. Kontribusi field tidak boleh ditafsirkan sebagai bukti fraud atau causality.</span>
+                </div>
+            </li>
+        </ul>
+    </section>
+    
+    <!-- API Examples -->
+    <section class="fs-example-section">
+        <div class="fs-section-divider">
+            <span class="fs-eyebrow">INTEGRATION</span>
+            <h3>Contoh API request</h3>
+            <p>Contoh request untuk single dan batch prediction.</p>
+        </div>
+        
+        <div class="fs-example-tabs">
+            <button class="fs-example-tab active" data-example="single">
+                Single prediction
+            </button>
+            <button class="fs-example-tab" data-example="batch">
+                Batch prediction
+            </button>
+        </div>
+        
+        <div class="fs-example-content active" id="singleExample">
+            <button class="fs-copy-button" data-copy="singleCode">Salin</button>
+            <div class="fs-code-block">
+                <pre id="singleCode">POST /v1/predict
+Content-Type: application/json
+
+{
+  "application_id": "demo-application-001",
+  "income": 0.6,
+  "customer_age": 40,
+  "current_address_months_count": 24,
+  "intended_balcon_amount": 20.0,
+  "proposed_credit_limit": 1000.0,
+  "has_other_cards": 0,
+  "phone_mobile_valid": 1,
+  "foreign_request": 0,
+  ... (19 system fields)
+}</pre>
+            </div>
+        </div>
+        
+        <div class="fs-example-content" id="batchExample">
+            <button class="fs-copy-button" data-copy="batchCode">Salin</button>
+            <div class="fs-code-block">
+                <pre id="batchCode">POST /v1/predict/batch
+Content-Type: application/json
+
+{
+  "batch_id": "decision-window-2024-001",
+  "complete_decision_window": true,
+  "applications": [
+    {
+      "application_id": "app-001",
+      "income": 0.6,
+      "customer_age": 40,
+      ... (all 27 fields)
+    },
+    {
+      "application_id": "app-002",
+      ... (all 27 fields)
+    }
+  ]
+}</pre>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/system.js') }}" defer></script>
+{% endblock %}

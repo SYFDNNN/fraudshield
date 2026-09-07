@@ -1,0 +1,93 @@
+/* Subtle ambient motion: product-like depth without dashboard noise. */
+.animated-background {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+}
+
+.animated-background::before {
+    position: absolute;
+    top: -40%;
+    left: 50%;
+    width: min(1100px, 88vw);
+    height: 720px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(121, 130, 211, 0.105), transparent 66%);
+    filter: blur(12px);
+    content: "";
+    transform: translateX(-50%);
+}
+
+.grid-pattern {
+    position: absolute;
+    inset: 72px 0 auto;
+    height: min(760px, 85vh);
+    opacity: 0.23;
+    background-image:
+        linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), transparent 86%);
+}
+
+.orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(90px);
+    opacity: 0.08;
+    will-change: transform;
+}
+
+.orb-1 {
+    top: 8%;
+    right: 5%;
+    width: 420px;
+    height: 420px;
+    background: #6f7ae0;
+    animation: fs-ambient-a 18s ease-in-out infinite alternate;
+}
+
+.orb-2 {
+    bottom: 4%;
+    left: 2%;
+    width: 360px;
+    height: 360px;
+    background: #ffffff;
+    opacity: 0.025;
+    animation: fs-ambient-b 22s ease-in-out infinite alternate;
+}
+
+.grain-overlay {
+    position: absolute;
+    inset: 0;
+    opacity: 0.018;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.95' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.75'/%3E%3C/svg%3E");
+}
+
+@keyframes fs-ambient-a {
+    from { transform: translate3d(0, 0, 0) scale(1); }
+    to { transform: translate3d(-70px, 52px, 0) scale(1.12); }
+}
+
+@keyframes fs-ambient-b {
+    from { transform: translate3d(0, 0, 0) scale(1); }
+    to { transform: translate3d(90px, -36px, 0) scale(1.16); }
+}
+
+@media (max-width: 720px) {
+    .grid-pattern {
+        background-size: 54px 54px;
+    }
+
+    .orb {
+        opacity: 0.05;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .orb {
+        animation: none;
+    }
+}

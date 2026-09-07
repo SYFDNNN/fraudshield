@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#08090a">
+    <meta name="color-scheme" content="dark">
+    <meta name="description" content="FraudShield membantu tim risiko memprioritaskan pengajuan pembukaan rekening untuk pemeriksaan manusia.">
+    <title>{% block title %}FraudShield{% endblock %} · Risk Operations</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/linear-theme.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/background-animation.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <a class="fs-skip-link" href="#mainContent">Lewati ke konten utama</a>
+
+    <div class="animated-background" aria-hidden="true">
+        <div class="grid-pattern"></div>
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="grain-overlay"></div>
+    </div>
+
+    <header class="linear-topbar" id="topbar">
+        <div class="linear-topbar-inner">
+            <a class="linear-logo" href="{{ url_for('main.index') }}" aria-label="FraudShield overview">
+                <span class="linear-logo-icon" aria-hidden="true">FS</span>
+                <span class="linear-logo-copy">
+                    <strong>FraudShield</strong>
+                    <small>Risk Operations</small>
+                </span>
+            </a>
+
+            <button
+                class="linear-menu-toggle"
+                id="menuToggle"
+                type="button"
+                aria-expanded="false"
+                aria-controls="primaryNav"
+                aria-label="Buka navigasi"
+            >
+                <span></span><span></span>
+            </button>
+
+            <nav class="linear-nav" id="primaryNav" aria-label="Navigasi utama">
+                <a href="{{ url_for('main.index') }}"
+                   class="linear-nav-item {% if request.endpoint == 'main.index' %}active{% endif %}"
+                   {% if request.endpoint == 'main.index' %}aria-current="page"{% endif %}>
+                    Overview
+                </a>
+                <a href="{{ url_for('main.simulation') }}"
+                   class="linear-nav-item {% if request.endpoint == 'main.simulation' %}active{% endif %}"
+                   {% if request.endpoint == 'main.simulation' %}aria-current="page"{% endif %}>
+                    Simulation
+                </a>
+                <a href="{{ url_for('main.review_queue') }}"
+                   class="linear-nav-item {% if request.endpoint == 'main.review_queue' %}active{% endif %}"
+                   {% if request.endpoint == 'main.review_queue' %}aria-current="page"{% endif %}>
+                    Review Queue
+                </a>
+                <a href="{{ url_for('main.system_info') }}"
+                   class="linear-nav-item {% if request.endpoint == 'main.system_info' %}active{% endif %}"
+                   {% if request.endpoint == 'main.system_info' %}aria-current="page"{% endif %}>
+                    Model &amp; System
+                </a>
+            </nav>
+
+            <div class="linear-actions">
+                <button
+                    id="apiStatusBtn"
+                    class="linear-status-btn"
+                    type="button"
+                    aria-haspopup="dialog"
+                    aria-controls="apiModal"
+                >
+                    <span class="linear-status-dot" id="statusDot" aria-hidden="true"></span>
+                    <span id="statusLabel">Memeriksa API</span>
+                    <svg viewBox="0 0 16 16" aria-hidden="true">
+                        <path d="m4 6 4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div id="apiModal" class="fs-modal" style="display: none;" aria-hidden="true">
+        <div class="fs-modal-overlay" data-modal-close></div>
+        <section class="fs-modal-content" role="dialog" aria-modal="true" aria-labelledby="apiModalTitle">
+            <div class="fs-modal-header">
+                <div>
+                    <span class="fs-eyebrow">SYSTEM CONNECTION</span>
+                    <h2 id="apiModalTitle">Inference API</h2>
+                </div>
+                <button class="fs-modal-close" type="button" data-modal-close aria-label="Tutup dialog">×</button>
+            </div>
+            <div class="fs-modal-body">
+                <div id="apiStatusContent" aria-live="polite">
+                    <p class="fs-loading">Memeriksa status API…</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <main class="linear-main" id="mainContent">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="linear-footer">
+        <div class="linear-footer-content">
+            <div>
+                <strong>FraudShield</strong>
+                <span>Decision-support demo · Synthetic data only</span>
+            </div>
+            <p>Skor adalah sinyal prioritas. Keputusan akhir tetap dilakukan analyst manusia.</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

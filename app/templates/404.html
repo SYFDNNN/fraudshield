@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}404 · Halaman tidak ditemukan{% endblock %}
+
+{% block content %}
+<section class="fs-error-page">
+    <span class="fs-eyebrow">ERROR 404</span>
+    <h1>Halaman tidak ditemukan.</h1>
+    <p>Alamat yang Anda buka tidak tersedia atau sudah dipindahkan.</p>
+    <a href="{{ url_for('main.index') }}" class="fs-btn fs-btn-primary">
+        Kembali ke Overview
+    </a>
+</section>
+{% endblock %}

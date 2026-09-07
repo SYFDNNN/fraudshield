@@ -74,12 +74,16 @@ Hasil test hanya digunakan untuk pelaporan dan investigasi. Analisis kesalahan
 tidak boleh digunakan untuk menyesuaikan model yang sama lalu mengevaluasi
 ulang month 7 sebagai untouched test.
 
-## Analisis lanjutan
+## Fase 8 — Explainability prediction-time
 
-Dokumen ini akan dilengkapi setelah evaluasi final dan mencakup:
+API sekarang menambahkan native XGBoost TreeSHAP untuk menjelaskan satu raw
+margin model dasar tanpa fitting ulang atau pembacaan label. Kontribusi hasil
+preprocessing dikelompokkan kembali ke 27 raw field, lalu maksimum lima sinyal
+lokal terbesar dikirim sebagai reason codes directional.
 
-- Analisis false positive.
-- Analisis false negative.
-- Explainability berbasis SHAP.
-- Pemeriksaan interaksi fitur dan stability explanation.
-- Keterbatasan serta pertimbangan etis.
+Reason code tidak menggantikan analisis false positive/false negative di atas.
+Ia menjelaskan perilaku model pada satu pengajuan dan tidak membuktikan
+sebab-akibat, kepalsuan identitas, atau fraud. Sigmoid calibration tetap
+menentukan probabilitas publik; local accuracy SHAP diverifikasi pada raw margin
+XGBoost. Stability explanation lintas periode dan interaksi fitur masih menjadi
+pekerjaan lanjutan dan memerlukan evaluasi terpisah.

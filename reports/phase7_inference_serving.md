@@ -11,7 +11,7 @@ Komponen yang ditambahkan:
 - Artifact-locked runtime dengan verifikasi hash dan guardrail Fase 6.
 - FastAPI untuk single score, exact-capacity batch, health, contract, dan
   telemetry agregat.
-- Streamlit sebagai client API-only untuk demo portofolio.
+- Flask sebagai client API-only untuk demo portofolio.
 - Docker image non-root dan Compose untuk API plus demo.
 - Contoh payload, kontrak produksi, serta pengujian runtime dan HTTP.
 
@@ -24,7 +24,7 @@ Komponen yang ditambahkan:
 | Single request | Probability, risk band, dan fixed-threshold signal saja. |
 | Batch request | Exact top 5% pada satu complete decision window. |
 | Tie-break | Calibrated score, raw score, lalu stable application ID. |
-| Explanation | Belum tersedia; reason code tidak dibuat-buat. |
+| Explanation | Ditambahkan pada Fase 8 melalui native TreeSHAP lokal. |
 | Decision | Human review only; automated rejection selalu `false`. |
 | Logging | Metadata agregat; payload dan score tidak dicatat. |
 
@@ -43,6 +43,6 @@ dan capacity rate. Satu mismatch memblokir readiness.
 - Batch mewajibkan complete-window acknowledgement, batas ukuran, dan ID unik.
 - Exact capacity dan ranking deterministik diuji.
 - Response membawa model serta threshold-policy version.
-- Streamlit tidak memuat model; seluruh scoring melewati API.
+- Flask UI tidak memuat model; seluruh scoring melewati API.
 - Container berjalan sebagai user non-root dan artifact di-mount read-only.
 - Production boundary dan limitation terdokumentasi secara eksplisit.

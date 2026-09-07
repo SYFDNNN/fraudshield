@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block title %}Review Queue{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/review_queue.css') }}">
+{% endblock %}
+
+{% block content %}
+<header class="fs-workspace-header">
+    <span class="fs-eyebrow">EXACT-CAPACITY BATCH</span>
+    <div class="fs-workspace-title-row">
+        <div>
+            <h1>Review Queue</h1>
+            <p>Validasi satu decision window lengkap dan bentuk antrean pemeriksaan manusia yang dapat diaudit.</p>
+        </div>
+        <span class="fs-page-chip">Maximum 5,000 rows</span>
+    </div>
+</header>
+
+<ol class="fs-process-strip" aria-label="Alur batch review">
+    <li class="is-active"><span>01</span><strong>Upload</strong><small>JSON window</small></li>
+    <li><span>02</span><strong>Validate</strong><small>Contract fields</small></li>
+    <li><span>03</span><strong>Prioritize</strong><small>Exact capacity</small></li>
+    <li><span>04</span><strong>Review</strong><small>Analyst action</small></li>
+</ol>
+
+<div class="fs-queue-layout">
+    <!-- Upload Section -->
+    <section class="fs-upload-section">
+        <div class="fs-form-heading">
+            <span>BATCH UPLOAD</span>
+            <h3>Decision window</h3>
+            <p>Unggah satu complete decision window sebagai JSON. Upload menerima raw array maupun envelope API.</p>
+        </div>
+        
+        <div id="uploadAlertContainer" aria-live="polite"></div>
+        
+        <!-- Upload Area -->
+        <div class="fs-upload-area" id="uploadArea" role="button" tabindex="0" aria-controls="fileInput">
+            <span class="fs-upload-icon" aria-hidden="true">
+                <svg viewBox="0 0 32 32">
+                    <path d="M16 22V8m0 0-5 5m5-5 5 5M7 20v4.5A2.5 2.5 0 0 0 9.5 27h13a2.5 2.5 0 0 0 2.5-2.5V20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </span>
+            <h4>Drop file JSON di sini</h4>
+            <p>atau pilih file berisi seluruh pengajuan dalam satu decision window</p>
+            <button type="button" class="fs-btn fs-btn-primary">
+                Pilih File
+            </button>
+            <p class="fs-upload-formats">
+                Format: .json · Max 16MB · Contoh: examples/batch_request.json
+            </p>
+        </div>
+        <input type="file" 
+               class="fs-upload-input" 
+               id="fileInput" 
+               accept=".json,application/json">
+        
+        <!-- Batch ID Input -->
+        <div class="fs-batch-id-input">
+            <div class="fs-form-group">
+                <label class="fs-label" for="batchIdInput">
+                    Batch ID <span class="fs-label-optional">Opsional</span>
+                </label>
+                <input type="text" 
+                       class="fs-input" 
+                       id="batchIdInput" 
+                       placeholder="batch-upload-001">
+                <p class="fs-help-text">
+                    Identifier unik untuk decision window ini. Akan digunakan sebagai fallback jika file tidak memiliki batch_id.
+                </p>
+            </div>
+        </div>
+        
+        <!-- Validation Results -->
+        <div class="fs-validation-section" id="validationSection">
+            <h4>Hasil validasi</h4>
+            
+            <div class="fs-validation-summary" id="validationSummary">
+                <!-- Populated by JavaScript -->
+            </div>
+            
+            <div id="validationIssues">
+                <!-- Populated by JavaScript -->
+            </div>
+            
+            <div class="fs-action-buttons">
+                <button type="button" 
+                        class="fs-btn fs-btn-primary" 
+                        id="submitBatchBtn" 
+                        disabled>
+                    Bentuk antrean review
+                </button>
+                <button type="button" 
+                        class="fs-btn fs-btn-secondary" 
+                        id="clearUploadBtn">
+                    Hapus dan unggah ulang
+                </button>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Results Section -->
+    <section class="fs-results-section" id="resultsSection">
+        <div class="fs-results-header">
+            <div class="fs-form-heading">
+                <span>HASIL BATCH</span>
+                <h3 id="resultsBatchId">Hasil batch</h3>
+                <p>Exact-capacity queue dengan prioritas deterministik dan alasan lokal model.</p>
+            </div>
+            
+            <div class="fs-results-meta">
+                <div class="fs-results-meta-item">
+                    <div class="fs-results-meta-label">Total Aplikasi</div>
+                    <div class="fs-results-meta-value" id="resultsRowCount">—</div>
+                </div>
+                <div class="fs-results-meta-item">
+                    <div class="fs-results-meta-label">Masuk Review</div>
+                    <div class="fs-results-meta-value" id="resultsReviewCount">—</div>
+                </div>
+                <div class="fs-results-meta-item">
+                    <div class="fs-results-meta-label">Kapasitas review</div>
+                    <div class="fs-results-meta-value" id="resultsReviewRate">—</div>
+                </div>
+                <div class="fs-results-meta-item">
+                    <div class="fs-results-meta-label">Versi kontrak</div>
+                    <div class="fs-results-meta-value" id="resultsContractVersion">—</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Risk Distribution -->
+        <div class="fs-risk-distribution">
+            <div class="fs-section-heading-inline">
+                <div>
+                    <span class="fs-eyebrow">PORTFOLIO SIGNAL</span>
+                    <h4>Distribusi risk band</h4>
+                </div>
+                <p>Berdasarkan seluruh decision window</p>
+            </div>
+            <div class="fs-risk-bars" id="riskBars">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+        
+        <!-- Queue Tabs -->
+        <div class="fs-queue-tabs">
+            <button class="fs-queue-tab active" data-tab="review">
+                Perlu direview
+                <span class="fs-queue-tab-badge" id="reviewQueueCount">0</span>
+            </button>
+            <button class="fs-queue-tab" data-tab="all">
+                Semua pengajuan
+                <span class="fs-queue-tab-badge" id="allAppsCount">0</span>
+            </button>
+        </div>
+        
+        <!-- Review Queue Tab -->
+        <div class="fs-tab-content active" id="reviewTab">
+            <div class="fs-table-container">
+                <div class="fs-table-toolbar">
+                    <div class="fs-table-search">
+                        <input type="text" 
+                               class="fs-input" 
+                               id="reviewSearchInput" 
+                               placeholder="Cari application ID…">
+                    </div>
+                    <div class="fs-table-actions">
+                        <button class="fs-btn fs-btn-secondary" id="exportReviewCsv">
+                            Ekspor CSV
+                        </button>
+                    </div>
+                </div>
+                <div class="fs-table-wrapper">
+                    <table class="fs-table" id="reviewTable">
+                        <thead>
+                            <tr>
+                                <th>Urutan</th>
+                                <th>Application ID</th>
+                                <th>Probabilitas</th>
+                                <th>Risk band</th>
+                                <th>Tindakan analyst</th>
+                                <th>Alasan utama</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reviewTableBody">
+                            <tr>
+                                <td colspan="6" class="fs-table-empty">
+                                    Antrean belum terbentuk
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- All Applications Tab -->
+        <div class="fs-tab-content" id="allTab">
+            <div class="fs-table-container">
+                <div class="fs-table-toolbar">
+                    <div class="fs-table-search">
+                        <input type="text" 
+                               class="fs-input" 
+                               id="allSearchInput" 
+                               placeholder="Cari application ID…">
+                    </div>
+                    <div class="fs-table-actions">
+                        <button class="fs-btn fs-btn-secondary" id="exportAllCsv">
+                            Ekspor CSV
+                        </button>
+                    </div>
+                </div>
+                <div class="fs-table-wrapper">
+                    <table class="fs-table" id="allTable">
+                        <thead>
+                            <tr>
+                                <th>Application ID</th>
+                                <th>Probabilitas</th>
+                                <th>Risk band</th>
+                                <th>Review</th>
+                                <th>Tindakan analyst</th>
+                                <th>Alasan utama</th>
+                            </tr>
+                        </thead>
+                        <tbody id="allTableBody">
+                            <tr>
+                                <td colspan="6" class="fs-table-empty">
+                                    Belum ada data pengajuan
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/review_queue.js') }}" defer></script>
+{% endblock %}

@@ -106,18 +106,20 @@ preprocessing pipeline yang di-fit hanya pada training set.
 
 ## Model Output
 
-Kontrak inference Fase 7 menghasilkan:
+Kontrak inference Fase 8 menghasilkan:
 
 - `fraud_probability`
 - `risk_band`
 - `model_version`
 - `threshold_policy_version`
 - `review_rank`
+- `reason_codes`
+- `analyst_action`
 
 `review_rank` hanya tersedia untuk satu complete decision window pada batch
-endpoint. Reason code belum tersedia pada Fase 7; API mengembalikan
-`explanation_status: not_available_in_phase7` dan list kosong agar tidak
-membuat penjelasan yang tidak didukung model.
+endpoint. Reason code memakai native XGBoost TreeSHAP untuk menjelaskan raw
+margin model dasar sebelum calibration. Ia tidak membaca target, tidak memuat
+nilai input asli, dan tidak boleh ditafsirkan sebagai sebab atau bukti fraud.
 
 ## Decision Workflow
 

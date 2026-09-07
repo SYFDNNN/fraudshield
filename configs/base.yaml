@@ -273,7 +273,7 @@ final_evaluation:
         - 1.1
 
 inference:
-  contract_version: "1.0.0"
+  contract_version: "2.0.0"
   model_artifact: artifacts/phase5/calibrated_review_model.joblib
   phase5_metadata_artifact: artifacts/phase5/phase5_metadata.json
   phase6_metadata_artifact: artifacts/phase6/phase6_metadata.json
@@ -284,6 +284,12 @@ inference:
   threshold_policy_version: review-capacity-5pct-validation-m6-v1
   maximum_batch_size: 5000
   automated_rejection_allowed: false
+  explainability:
+    enabled: true
+    method: xgboost_native_tree_shap
+    scope: base_xgboost_raw_margin_before_probability_calibration
+    maximum_reason_codes: 5
+    include_raw_input_values: false
 
 artifacts:
   directory: artifacts

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}500 · Kesalahan server{% endblock %}
+
+{% block content %}
+<section class="fs-error-page">
+    <span class="fs-eyebrow">ERROR 500</span>
+    <h1>Server belum dapat menyelesaikan permintaan.</h1>
+    <p>Coba muat ulang halaman. Jika masalah berlanjut, periksa log layanan Flask.</p>
+    <a href="{{ url_for('main.index') }}" class="fs-btn fs-btn-primary">
+        Kembali ke Overview
+    </a>
+</section>
+{% endblock %}
